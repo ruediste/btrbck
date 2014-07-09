@@ -23,10 +23,10 @@
 			<version>${mockito.version}</version>
 			<scope> test </scope>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>16.0.1</version>
-		</dependency>
+		</dependency> -->
 	</dependencies>
 </project>

@@ -1,0 +1,98 @@
+@startuml
+
+class VersionHistoryEntry {
+	streamId: UUID
+}
+VersionHistoryEntry --|> SnapshotVersionHistoryEntry
+VersionHistoryEntry --|> RestoreVersionHistoryEntry
+
+class SnapshotVersionHistoryEntry {
+	count: int
+}
+
+class RestoreVersionHistoryEntry {
+	restoredSnapshotNr: int
+}
+
+class VersionHistory {
+	isDescendantOf(VersionHistory)
+	equals(VersionHistory)
+	appendVersion(ApplicationStreamRepository)
+}
+VersionHistory --> "*"  VersionHistoryEntry
+
+enum BasePeriod {
+	YEAR
+	MONTH
+	WEEK
+	DAY
+	HOUR
+}
+
+class PeriodicInstant {
+	divisor: int
+	offset: TimeInterval
+	occurenceBefore(Date): Date
+}
+PeriodicInstant --> BasePeriod
+
+class Snapshot {
+	nr: int
+	date: Date
+}
+
+class Retention{
+	period: TimePeriod
+}
+Retention --> PeriodicInstant
+
+class Stream {
+	id: UUID
+	name: String
+	initialRetentionPeriod: TimePeriod
+}
+Stream --> "1" VersionHistory
+Stream --> "1" PeriodicInstant: "snapshot instants"
+Stream --> "*" Snapshot
+Stream --> "*" Retention
+
+class RemoteRepository {
+	name: String
+	location: String
+}
+
+class StreamSet {
+	includeAll: boolean
+	included: Set<Stream>
+	excluded: Set<Stream>
+	
+	getStreams(): List<Stream>
+}
+
+class SyncConfiguration {
+}
+SyncConfiguration --> StreamSet
+SyncConfiguration --> PeriodicInstant: "sync time"
+SyncConfiguration --> "1" RemoteRepository
+
+class StreamRepository {
+	name: String
+	syncTo(Stream, BackupStreamRepository): void
+	syncFrom(Stream, BackupStreamRepository): void
+}
+StreamRepository --> "*" Stream
+StreamRepository --> "*" SyncConfiguration
+StreamRepository --> "*" RemoteRepository
+
+class BackupStreamRepository {
+}
+StreamRepository <|-- BackupStreamRepository
+
+class ApplicationStreamRepository {
+	snapshot(Stream): void
+	prune(Stream): void
+	restoreWorkingDirectory(Stream, Version): void
+}
+StreamRepository <|-- ApplicationStreamRepository
+
+@enduml
