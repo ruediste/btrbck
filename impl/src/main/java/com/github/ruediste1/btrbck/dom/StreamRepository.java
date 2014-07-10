@@ -30,4 +30,5 @@ public abstract class StreamRepository {
 	public Path getRepositoryXmlFile() {
 		return getBaseDirectory().resolve("repository.xml");
 	}
+
 }

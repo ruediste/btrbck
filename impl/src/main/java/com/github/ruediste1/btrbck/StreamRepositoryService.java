@@ -5,13 +5,16 @@ import java.io.InputStream;
 import java.nio.file.Files;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import com.github.ruediste1.btrbck.LockManager.Lock;
+import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
 
 /**
  * Provides operations on {@link StreamRepository}s
  */
+@Singleton
 public class StreamRepositoryService {
 
 	@Inject
@@ -36,6 +39,13 @@ public class StreamRepositoryService {
 		InputStream in = getClass().getClassLoader().getResourceAsStream(
 				"repository.template.xml");
 		Files.copy(in, repository.getRepositoryXmlFile());
+	}
+
+	/**
+	 * Delete this empty repository
+	 */
+	public void deleteEmptyRepository(ApplicationStreamRepository repository) {
+
 	}
 
 }

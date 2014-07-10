@@ -201,6 +201,12 @@
 			<version>3.0</version>
 		</dependency>
 		<dependency>
+			<groupId>org.reflections</groupId>
+			<artifactId>reflections</artifactId>
+			<version>0.9.8</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.jabsaw</groupId>
 			<artifactId>jabsaw-api</artifactId>
 			<version>${jabsaw.version}</version>

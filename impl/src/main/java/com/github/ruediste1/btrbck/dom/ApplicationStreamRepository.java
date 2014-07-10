@@ -9,4 +9,7 @@ public class ApplicationStreamRepository extends StreamRepository {
 		return rootDirectory.resolve(".backup");
 	}
 
+	public Path getWorkingDirectory(Stream stream) {
+		return rootDirectory.resolve(stream.name);
+	}
 }

@@ -23,7 +23,7 @@ public class LockManager {
 
 	public Lock getLock(Path lockFile, boolean shared) throws IOException {
 		final FileChannel f = FileChannel.open(lockFile,
-				StandardOpenOption.READ);
+				StandardOpenOption.WRITE);
 		final FileLock fileLock = f.lock(0L, Long.MAX_VALUE, shared);
 
 		return new Lock() {
