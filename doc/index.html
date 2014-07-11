@@ -4,13 +4,16 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <title></title>
+  <title>BtrBck - BTRFS Backup Tool</title>
   <style type="text/css">code{white-space: pre;}</style>
 </head>
 <body>
+<div id="header">
+<h1 class="title">BtrBck - BTRFS Backup Tool</h1>
+</div>
 <div id="TOC">
 <ul>
-<li><a href="#backup">Backup</a><ul>
+<li><a href="#btrbck---btrfs-backup-tool">BtrBck - BTRFS Backup Tool</a><ul>
 <li><a href="#versioning">Versioning</a></li>
 <li><a href="#snapshot-retention-and-pruning">Snapshot Retention and Pruning</a></li>
 <li><a href="#snapshot-clone-sources">Snapshot Clone Sources</a></li>
@@ -30,7 +33,7 @@
 </ul></li>
 </ul>
 </div>
-<h1 id="backup"><a href="#backup">Backup</a></h1>
+<h1 id="btrbck---btrfs-backup-tool"><a href="#btrbck---btrfs-backup-tool">BtrBck - BTRFS Backup Tool</a></h1>
 <p>The backup system provided by the LAP is based on the snapshot feature of<br />BTRFS. All data of an application is placed in a single BTRFS subvolume. This<br />allows instant, atomic snapshots to be taken while the application is running.<br />If the application is later restored from the snapshot, it looks to the application<br />like an ordinary power loss.</p>
 <p>The backup tool operates on so called backup streams. All data in a single stream<br />is managed together. Typically, every application is placed in it’s own<br />stream. If consistency is required between multiple applications,<br />all applications have to be placed in the same stream. However, this means also<br />that the applications have to run on the same server.</p>
 <p>Backup streams are contained in stream repositories. There are two types of<br />repositories: Application stream repositories contain working<br />directories upon which applications operate and of which snapshots are<br />taken. Backup stream repositories do not contain<br />working directories and are only used to replicate streams into.</p>

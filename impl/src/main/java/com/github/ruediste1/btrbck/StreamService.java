@@ -3,10 +3,9 @@ package com.github.ruediste1.btrbck;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -26,7 +25,7 @@ import com.github.ruediste1.btrbck.dom.VersionHistory;
 
 /**
  * Provides operations on {@link Stream}s
- * 
+ *
  */
 @Singleton
 public class StreamService {
@@ -91,14 +90,18 @@ public class StreamService {
 		return readStream;
 	}
 
-	public void createStream(Stream stream) throws IOException {
+	public Stream createStream(StreamRepository streamRepository, String name)
+			throws IOException {
 		Lock lock = streamRepositoryService.getStreamEnumerationLock(
-				stream.streamRepository, false);
+				streamRepository, false);
 
-		if (readStream(stream.streamRepository, stream.name) != null) {
-			throw new DisplayException("Stream " + stream.name
-					+ " already exists");
+		if (readStream(streamRepository, name) != null) {
+			throw new DisplayException("Stream " + name + " already exists");
 		}
+
+		Stream stream = new Stream();
+		stream.streamRepository = streamRepository;
+		stream.name = name;
 
 		Files.createDirectory(stream.getStreamMetaDirectory());
 		Util.initializeLockFile(stream.getSnapshotCreationLockFile());
@@ -127,6 +130,7 @@ public class StreamService {
 		writeVersionHistory(stream);
 
 		lock.release();
+		return stream;
 	}
 
 	private void writeVersionHistory(Stream stream) {
@@ -149,7 +153,7 @@ public class StreamService {
 			btrfsService.deleteSubVolume(workingDirectory);
 		}
 
-		for (Snapshot snapshot : getSnapshots(stream)) {
+		for (Snapshot snapshot : getSnapshots(stream).values()) {
 			deleteSnapshot(snapshot);
 		}
 
@@ -166,10 +170,14 @@ public class StreamService {
 		}
 	}
 
-	public List<Snapshot> getSnapshots(Stream stream) {
-		ArrayList<Snapshot> result = new ArrayList<>();
+	/**
+	 * Return the snapshots in the stream, sorted by their number
+	 */
+	public TreeMap<Integer, Snapshot> getSnapshots(Stream stream) {
+		TreeMap<Integer, Snapshot> result = new TreeMap<>();
 		for (String name : Util.getDirectoryNames(stream.getSnapshotsDir())) {
-			result.add(Snapshot.parse(stream, name));
+			Snapshot snapshot = Snapshot.parse(stream, name);
+			result.put(snapshot.nr, snapshot);
 		}
 		return result;
 	}

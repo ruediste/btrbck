@@ -99,11 +99,7 @@ public class StreamServiceTest extends TestBase {
 	}
 
 	private Stream createStream(String name) throws IOException {
-		Stream stream = new Stream();
-		stream.name = name;
-		stream.streamRepository = repository;
-		service.createStream(stream);
-		return stream;
+		return service.createStream(repository, name);
 	}
 
 	@Test

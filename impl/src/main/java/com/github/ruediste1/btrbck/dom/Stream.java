@@ -22,7 +22,7 @@ public class Stream {
 	public Period initialRetentionPeriod;
 
 	@XmlTransient
-	public StreamRepository streamRepository;
+	transient public StreamRepository streamRepository;
 
 	@XmlTransient
 	public VersionHistory versionHistory;

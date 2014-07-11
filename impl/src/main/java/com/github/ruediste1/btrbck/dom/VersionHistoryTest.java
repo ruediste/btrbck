@@ -1,12 +1,20 @@
 package com.github.ruediste1.btrbck.dom;
 
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.util.TreeMap;
 import java.util.UUID;
 
 import org.junit.Test;
+
+import com.github.ruediste1.btrbck.dom.VersionHistory.HistoryNode;
 
 public class VersionHistoryTest {
 
@@ -58,6 +66,36 @@ public class VersionHistoryTest {
 		assertTrue(history.entries.size() == 2);
 		assertTrue(history.entries.get(1).streamId == id);
 		assertTrue(history.getVersionCount() == 3);
+
+	}
+
+	@Test
+	public void testCalculateNodes() throws Exception {
+		VersionHistory history = new VersionHistory();
+		UUID id = UUID.randomUUID();
+
+		history.addVersion(id);
+		history.addRestore(id, 0);
+		history.addVersion(id);
+		history.addRestore(id, 0);
+		history.addRestore(id, 1);
+		history.addVersion(id);
+		history.addVersion(id);
+
+		TreeMap<Integer, HistoryNode> nodes = history.calculateNodes();
+
+		assertThat(nodes.entrySet(), hasSize(4));
+
+		assertThat(nodes.get(0).parents, is(empty()));
+		assertThat(nodes.get(0).snapshotNr, is(0));
+		assertThat(nodes.get(1).parents, hasSize(1));
+		assertThat(nodes.get(1).parents, hasItem(nodes.get(0)));
+		assertThat(nodes.get(2).parents, hasSize(2));
+		assertThat(nodes.get(2).parents, hasItem(nodes.get(0)));
+		assertThat(nodes.get(2).parents, hasItem(nodes.get(1)));
+		assertThat(nodes.get(3).parents, hasSize(1));
+		assertThat(nodes.get(3).parents, hasItem(nodes.get(2)));
+		assertThat(nodes.get(3).snapshotNr, is(3));
 
 	}
 }
