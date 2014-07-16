@@ -23,20 +23,20 @@ public class SyncService {
 	@Inject
 	StreamService streamService;
 
-	/**
-	 * Create a {@link StreamState} for a stream
-	 */
-	public StreamState readStreamState(Stream stream) {
-		StreamState result = new StreamState();
-		result.stream = stream;
-		result.snapshotNumbers.addAll(streamService.getSnapshots(stream)
-				.keySet());
-		return result;
-	}
-
 	public static class SendFileSpec {
 		List<Snapshot> cloneSources = new ArrayList<>();
 		Snapshot target;
+	}
+
+	/**
+	 * Create a {@link StreamState} for a stream
+	 */
+	public StreamState calculateStreamState(Stream stream) {
+		StreamState result = new StreamState();
+		result.versionHistory = stream.versionHistory;
+		result.availableSnapshotNumbers.addAll(streamService.getSnapshots(
+				stream).keySet());
+		return result;
 	}
 
 	/**
@@ -50,7 +50,7 @@ public class SyncService {
 		VersionHistory versionHistory = sourceStream.versionHistory;
 
 		return determineSendFiles(sourceSnapshots, versionHistory,
-				stateOfTarget.snapshotNumbers);
+				stateOfTarget.availableSnapshotNumbers);
 	}
 
 	List<SendFileSpec> determineSendFiles(

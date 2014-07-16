@@ -2,6 +2,8 @@ package com.github.ruediste1.btrbck;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.SnapshotHandle;
 import com.github.ruediste1.btrbck.dom.StreamHandle;
@@ -11,6 +13,18 @@ import com.github.ruediste1.btrbck.dom.StreamRepositoryHandle;
  * Provides high level backup operations
  */
 public class BackupService {
+	@Inject
+	SyncService syncService;
+
+	@Inject
+	StreamService streamService;
+
+	@Inject
+	BtrfsService btrfsService;
+
+	@Inject
+	BlockTransferService blockTransferService;
+
 	public void createStream(StreamHandle streamHandle) {
 
 	}
@@ -27,11 +41,10 @@ public class BackupService {
 
 	}
 
-	public void synchronizeTo(StreamHandle streamHandle) {
-
-	}
-
-	public void synchronizeFrom(StreamHandle streamHandle) {
+	/**
+	 * 
+	 */
+	public void sendSnapshots() {
 
 	}
 

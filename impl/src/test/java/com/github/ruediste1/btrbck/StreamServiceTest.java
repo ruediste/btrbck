@@ -55,6 +55,7 @@ public class StreamServiceTest extends TestBase {
 		assertTrue(Files.exists(stream.getSnapshotRemovalLockFile()));
 		assertTrue(Files.exists(stream.getStreamConfigFile()));
 		assertTrue(Files.exists(stream.getSnapshotsDir()));
+		assertTrue(Files.exists(stream.getReceiveTempDir()));
 		assertTrue(Files.exists(repository.getWorkingDirectory(stream)));
 
 		// read repository back and compare

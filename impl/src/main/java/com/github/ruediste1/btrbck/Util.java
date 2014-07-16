@@ -1,7 +1,14 @@
 package com.github.ruediste1.btrbck;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,6 +17,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import com.google.common.io.ByteStreams;
 import com.google.inject.Injector;
 
 public class Util {
@@ -88,5 +96,46 @@ public class Util {
 			throw new RuntimeException("Error while reading directories", e);
 		}
 		return result;
+	}
+
+	public static void send(String s, OutputStream output)
+			throws UnsupportedEncodingException, IOException {
+		ByteStreams.copy(new ByteArrayInputStream(s.getBytes("UTF-8")), output);
+		output.flush();
+	}
+
+	/**
+	 * Waits until a certain idicator is seen on the reader
+	 */
+	public static void waitFor(String indicator, InputStream input)
+			throws IOException {
+		InputStreamReader reader = new InputStreamReader(input, "UTF-8");
+		char[] buf = new char[32];
+		CyclicCharacterBuffer cbuf = new CyclicCharacterBuffer(
+				indicator.length());
+		while (true) {
+			int count;
+			count = reader.read(buf);
+			if (count < 0) {
+				break;
+			}
+			cbuf.append(buf, count);
+			if (indicator.equals(cbuf.getTail())) {
+				break;
+			}
+		}
+	}
+
+	public static void send(Object obj, OutputStream output) throws IOException {
+		ObjectOutputStream out = new ObjectOutputStream(output);
+		out.writeObject(obj);
+		out.flush();
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T read(Class<T> cls, InputStream input)
+			throws ClassNotFoundException, IOException {
+		ObjectInputStream in = new ObjectInputStream(input);
+		return (T) in.readObject();
 	}
 }

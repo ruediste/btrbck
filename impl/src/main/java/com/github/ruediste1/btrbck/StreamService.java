@@ -25,7 +25,7 @@ import com.github.ruediste1.btrbck.dom.VersionHistory;
 
 /**
  * Provides operations on {@link Stream}s
- *
+ * 
  */
 @Singleton
 public class StreamService {
@@ -107,6 +107,7 @@ public class StreamService {
 		Util.initializeLockFile(stream.getSnapshotCreationLockFile());
 		Util.initializeLockFile(stream.getSnapshotRemovalLockFile());
 		Files.createDirectory(stream.getSnapshotsDir());
+		Files.createDirectory(stream.getReceiveTempDir());
 
 		stream.id = UUID.randomUUID();
 		stream.initialRetentionPeriod = Period.days(1);
@@ -197,5 +198,12 @@ public class StreamService {
 
 	public void deleteSnapshot(Snapshot snapshot) {
 		btrfsService.deleteSubVolume(snapshot.getSnapshotDir());
+	}
+
+	public void clearReceiveTempDir(Stream stream) {
+		for (String name : Util.getDirectoryNames(stream.getReceiveTempDir())) {
+			btrfsService.deleteSubVolume(stream.getReceiveTempDir().resolve(
+					name));
+		}
 	}
 }

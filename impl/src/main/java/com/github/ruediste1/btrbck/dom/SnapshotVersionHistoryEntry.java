@@ -3,6 +3,7 @@ package com.github.ruediste1.btrbck.dom;
 import java.util.UUID;
 
 public class SnapshotVersionHistoryEntry extends VersionHistoryEntry {
+	private static final long serialVersionUID = 1L;
 	int count = 1;
 
 	public SnapshotVersionHistoryEntry(UUID streamId) {

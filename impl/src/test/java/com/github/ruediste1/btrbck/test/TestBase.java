@@ -10,6 +10,10 @@ import com.github.ruediste1.btrbck.Util;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
+/**
+ * Base class for unit tests. Sets up guice and injects the test class
+ * 
+ */
 public class TestBase {
 
 	@Inject

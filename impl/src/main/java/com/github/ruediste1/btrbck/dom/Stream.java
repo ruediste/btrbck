@@ -12,6 +12,7 @@ import org.joda.time.Period;
 
 @XmlRootElement
 public class Stream {
+
 	@XmlAttribute
 	public UUID id;
 	@XmlAttribute
@@ -22,7 +23,7 @@ public class Stream {
 	public Period initialRetentionPeriod;
 
 	@XmlTransient
-	transient public StreamRepository streamRepository;
+	public StreamRepository streamRepository;
 
 	@XmlTransient
 	public VersionHistory versionHistory;
@@ -45,6 +46,10 @@ public class Stream {
 
 	public Path getSnapshotsDir() {
 		return getStreamMetaDirectory().resolve("snapshots");
+	}
+
+	public Path getReceiveTempDir() {
+		return getStreamMetaDirectory().resolve("receiveTmp");
 	}
 
 	public Path getVersionHistoryFile() {

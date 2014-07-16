@@ -1,5 +1,6 @@
 package com.github.ruediste1.btrbck.dom;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -9,7 +10,9 @@ import java.util.UUID;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class VersionHistory {
+public class VersionHistory implements Serializable {
+	private static final long serialVersionUID = 1L;
+
 	public static class HistoryNode implements Comparable<HistoryNode> {
 		public int snapshotNr;
 		public final Set<HistoryNode> parents = new HashSet<>();
