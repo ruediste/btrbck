@@ -34,7 +34,8 @@ public class SshService {
 		}
 
 		@Override
-		public void close() throws InterruptedException {
+		public void close() throws Exception {
+			process.getInputStream().close();
 			process.waitFor();
 		}
 	}
@@ -44,7 +45,7 @@ public class SshService {
 
 		OutputStream getOutputStream();
 
-		void close() throws InterruptedException;
+		void close() throws Exception;
 	}
 
 	private ProcessBuilder processBuilder(SshTarget target, String... commands) {

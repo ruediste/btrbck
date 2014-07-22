@@ -2,7 +2,8 @@
 
 # BtrBck - BTRFS Backup Tool
 
-The backup system provided by the LAP is based on the snapshot feature of 
+
+This backup system is based on the snapshot feature of 
 BTRFS. All data of an application is placed in a single BTRFS subvolume. This
 allows instant, atomic snapshots to be taken while the application is running. 
 If the application is later restored from the snapshot, it looks to the application

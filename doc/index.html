@@ -34,7 +34,7 @@
 </ul>
 </div>
 <h1 id="btrbck---btrfs-backup-tool"><a href="#btrbck---btrfs-backup-tool">BtrBck - BTRFS Backup Tool</a></h1>
-<p>The backup system provided by the LAP is based on the snapshot feature of<br />BTRFS. All data of an application is placed in a single BTRFS subvolume. This<br />allows instant, atomic snapshots to be taken while the application is running.<br />If the application is later restored from the snapshot, it looks to the application<br />like an ordinary power loss.</p>
+<p>This backup system is based on the snapshot feature of<br />BTRFS. All data of an application is placed in a single BTRFS subvolume. This<br />allows instant, atomic snapshots to be taken while the application is running.<br />If the application is later restored from the snapshot, it looks to the application<br />like an ordinary power loss.</p>
 <p>The backup tool operates on so called backup streams. All data in a single stream<br />is managed together. Typically, every application is placed in it’s own<br />stream. If consistency is required between multiple applications,<br />all applications have to be placed in the same stream. However, this means also<br />that the applications have to run on the same server.</p>
 <p>Backup streams are contained in stream repositories. There are two types of<br />repositories: Application stream repositories contain working<br />directories upon which applications operate and of which snapshots are<br />taken. Backup stream repositories do not contain<br />working directories and are only used to replicate streams into.</p>
 <p>Streams consist of all working directory snapshots and meta data describing the<br />frequency snapshots are taken, the snapshot retention rules,<br />the stream version history.</p>

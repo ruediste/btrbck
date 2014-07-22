@@ -24,7 +24,7 @@ public class CyclicCharacterBuffer {
 		if (countToAdd > buffer.length) {
 			countToAdd = buffer.length;
 		}
-		int charsOffset = chars.length - countToAdd;
+		int charsOffset = charsLength - countToAdd;
 
 		// add the part from the current position to the end of the buffer
 		int firstCount = countToAdd;

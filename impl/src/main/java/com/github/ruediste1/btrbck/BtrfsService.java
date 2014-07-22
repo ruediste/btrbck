@@ -24,11 +24,38 @@ public class BtrfsService {
 	public void createSubVolume(Path subVolumeDir) {
 		String path = subVolumeDir.toAbsolutePath().toString();
 		try {
-			int exitValue;
-			exitValue = processBuilder("btrfs", "subvolume", "create", path)
-					.start().waitFor();
-			if (exitValue != 0) {
-				throw new IOException("exit code: " + exitValue);
+			{
+				int exitValue = processBuilder("btrfs", "subvolume", "create",
+						path).start().waitFor();
+				if (exitValue != 0) {
+					throw new IOException("exit code: " + exitValue);
+				}
+			}
+
+			// determine the current user
+			String userName;
+			{
+				Process process = new ProcessBuilder("whoami").redirectError(
+						Redirect.INHERIT).start();
+				int exitValue = process.waitFor();
+				if (exitValue != 0) {
+					throw new RuntimeException("whoami exited with "
+							+ exitValue);
+				}
+				userName = Util.readFully(process.getInputStream());
+				if (userName.endsWith("\n")) {
+					userName = userName.substring(0,
+							userName.length() - "\n".length());
+				}
+			}
+
+			// change the owner of the subvolume
+			{
+				int exitValue = processBuilder("chown", userName + ":", path)
+						.start().waitFor();
+				if (exitValue != 0) {
+					throw new RuntimeException("chown exited with " + exitValue);
+				}
 			}
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Error while creating sub volume in "
@@ -68,10 +95,11 @@ public class BtrfsService {
 
 	public void receive(Path destinationPath, Consumer<OutputStream> callback) {
 		try {
-			Process process = processBuilder("btrfs", "receive")
-					.directory(destinationPath.toFile())
+			Process process = processBuilder("btrfs", "receive", "-e",
+					destinationPath.toAbsolutePath().toString())
 					.redirectOutput(Redirect.PIPE).start();
 			callback.consume(process.getOutputStream());
+			process.getOutputStream().close();
 			int exitValue = process.waitFor();
 			if (exitValue != 0) {
 				throw new IOException("exit code: " + exitValue);
@@ -93,8 +121,8 @@ public class BtrfsService {
 			}
 			args.add(sendFile.target.getSnapshotDir().toAbsolutePath()
 					.toString());
-			Process process = processBuilder(args).redirectInput(Redirect.PIPE)
-					.start();
+			Process process = processBuilder(args)
+					.redirectOutput(Redirect.PIPE).start();
 			callback.consume(process.getInputStream());
 			int exitValue = process.waitFor();
 			if (exitValue != 0) {
@@ -104,6 +132,28 @@ public class BtrfsService {
 			throw new RuntimeException(
 					"Error while receiving snapshot sub volume in " + sendFile,
 					e);
+		}
+	}
+
+	/**
+	 * Takes a read only snapsot of the source an puts it to the target
+	 */
+	public void takeSnapshot(Path sourceVolume, Path target) {
+		try {
+			{
+				int exitValue = processBuilder("btrfs", "subvolume",
+						"snapshot", "-r",
+						sourceVolume.toAbsolutePath().toString(),
+						target.toAbsolutePath().toString()).start().waitFor();
+				if (exitValue != 0) {
+					throw new IOException("exit code: " + exitValue);
+				}
+			}
+
+		} catch (IOException | InterruptedException e) {
+			throw new RuntimeException("Error while taking snapshot of  "
+					+ sourceVolume.toAbsolutePath() + " to "
+					+ target.toAbsolutePath(), e);
 		}
 	}
 }

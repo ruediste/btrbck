@@ -21,6 +21,12 @@ public class CyclicCharacterBufferTest {
 	}
 
 	@Test
+	public void testSimpleWithCharsLength() {
+		buf.append("abcdef".toCharArray(), 3);
+		assertEquals("abc", buf.getTail());
+	}
+
+	@Test
 	public void testAddEmpty() {
 		buf.append("");
 		assertEquals("", buf.getTail());

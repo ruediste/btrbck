@@ -6,8 +6,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -34,8 +36,8 @@ public class StreamServiceTest extends TestBase {
 	@Before
 	public void setUp() throws IOException {
 		repository = new ApplicationStreamRepository();
-		repository.rootDirectory = Files.createTempDirectory("btrbck");
-		repositoryService.initializeRepository(repository);
+		repository.rootDirectory = createTempDirectory();
+		repositoryService.createRepository(repository);
 	}
 
 	@After
@@ -120,17 +122,23 @@ public class StreamServiceTest extends TestBase {
 	@Test
 	public void testTakeAndDeleteSnapshot() throws Exception {
 		Stream stream = createStream("test");
-
+		// create test file
+		{
+			Path testFile = repository.getWorkingDirectory(stream).resolve(
+					"test.txt");
+			Files.copy(new ByteArrayInputStream("Hello".getBytes("UTF-8")),
+					testFile);
+		}
 		assertTrue(service.getSnapshots(stream).isEmpty());
 
 		Snapshot snapshot = service.takeSnapshot(stream);
 
 		assertTrue(Files.exists(snapshot.getSnapshotDir()));
+		assertTrue(Files.exists(snapshot.getSnapshotDir().resolve("test.txt")));
 		assertFalse(service.getSnapshots(stream).isEmpty());
 
 		service.deleteSnapshot(snapshot);
 		assertFalse(Files.exists(snapshot.getSnapshotDir()));
 		assertTrue(service.getSnapshots(stream).isEmpty());
 	}
-
 }

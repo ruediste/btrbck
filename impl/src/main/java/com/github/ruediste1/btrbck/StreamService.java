@@ -184,6 +184,16 @@ public class StreamService {
 	}
 
 	public Snapshot takeSnapshot(Stream stream) {
+		if (!(stream.streamRepository instanceof ApplicationStreamRepository)) {
+			throw new DisplayException(
+					"Cannot take a snapshot of the working directory of stream "
+							+ stream.name
+							+ " in non-application stream repository "
+							+ stream.streamRepository.rootDirectory
+									.toAbsolutePath());
+		}
+		ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
+
 		Snapshot snapshot = new Snapshot();
 		snapshot.stream = stream;
 		snapshot.date = new DateTime();
@@ -192,7 +202,8 @@ public class StreamService {
 		stream.versionHistory.addVersion(stream.id);
 		writeVersionHistory(stream);
 
-		btrfsService.createSubVolume(snapshot.getSnapshotDir());
+		btrfsService.takeSnapshot(repo.getWorkingDirectory(stream),
+				snapshot.getSnapshotDir());
 		return snapshot;
 	}
 

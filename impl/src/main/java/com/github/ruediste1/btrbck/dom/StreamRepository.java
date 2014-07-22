@@ -2,8 +2,11 @@ package com.github.ruediste1.btrbck.dom;
 
 import java.nio.file.Path;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+@XmlRootElement
 public abstract class StreamRepository {
-	public String name;
 
 	/**
 	 * The root directory of this repository. This is the directory containing
@@ -11,6 +14,7 @@ public abstract class StreamRepository {
 	 * For {@link BackupStreamRepository}s it is the same as
 	 * {@link #getBaseDirectory()}.
 	 */
+	@XmlTransient
 	public Path rootDirectory;
 
 	/**

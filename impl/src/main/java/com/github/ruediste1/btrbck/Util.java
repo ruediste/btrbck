@@ -1,6 +1,7 @@
 package com.github.ruediste1.btrbck;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -137,5 +138,11 @@ public class Util {
 			throws ClassNotFoundException, IOException {
 		ObjectInputStream in = new ObjectInputStream(input);
 		return (T) in.readObject();
+	}
+
+	public static String readFully(InputStream input) throws IOException {
+		ByteArrayOutputStream tmp = new ByteArrayOutputStream();
+		ByteStreams.copy(input, tmp);
+		return tmp.toString("UTF-8");
 	}
 }

@@ -2,6 +2,9 @@ package com.github.ruediste1.btrbck.dom;
 
 import java.nio.file.Path;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class ApplicationStreamRepository extends StreamRepository {
 
 	@Override

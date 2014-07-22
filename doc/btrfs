@@ -1,1 +1,2 @@
 %sudo	ALL = (ALL) NOPASSWD: /sbin/btrfs
+%sudo	ALL = (ALL) NOPASSWD: /bin/chown

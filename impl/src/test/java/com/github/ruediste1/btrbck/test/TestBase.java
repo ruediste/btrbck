@@ -1,5 +1,10 @@
 package com.github.ruediste1.btrbck.test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import javax.inject.Inject;
 
 import org.junit.Before;
@@ -25,5 +30,9 @@ public class TestBase {
 		Util.setInjector(injector);
 		Util.injectMembers(this);
 		btrfsService.useSudo = true;
+	}
+
+	protected Path createTempDirectory() throws IOException {
+		return Files.createTempDirectory(Paths.get("/data/tmp"), "btrbck");
 	}
 }
