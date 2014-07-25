@@ -137,14 +137,32 @@ public class BtrfsService {
 
 	/**
 	 * Takes a read only snapsot of the source an puts it to the target
+	 * 
+	 * @deprecated Use {@link #takeSnapshot(Path,Path,boolean)} instead
 	 */
+	@Deprecated
 	public void takeSnapshot(Path sourceVolume, Path target) {
+		takeSnapshot(sourceVolume, target, true);
+	}
+
+	/**
+	 * Takes a read only snapsot of the source an puts it to the target
+	 * 
+	 * @param readonly
+	 *            TODO
+	 */
+	public void takeSnapshot(Path sourceVolume, Path target, boolean readonly) {
 		try {
 			{
-				int exitValue = processBuilder("btrfs", "subvolume",
-						"snapshot", "-r",
-						sourceVolume.toAbsolutePath().toString(),
-						target.toAbsolutePath().toString()).start().waitFor();
+				LinkedList<String> list = new LinkedList<String>();
+				list.addAll(Arrays.asList("btrfs", "subvolume", "snapshot"));
+				if (readonly) {
+					list.add("-r");
+				}
+				list.add(sourceVolume.toAbsolutePath().toString());
+				list.add(target.toAbsolutePath().toString());
+
+				int exitValue = processBuilder(list).start().waitFor();
 				if (exitValue != 0) {
 					throw new IOException("exit code: " + exitValue);
 				}

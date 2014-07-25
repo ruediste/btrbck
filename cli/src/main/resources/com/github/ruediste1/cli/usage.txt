@@ -1,7 +1,7 @@
 Usage: btrbck [options] <command> [<args>]
 
 btrbck snapshot
-  Perform snapshots as specified in the repository configuration
+  Take a snapshot of all streams in the repository
   
 btrbck snapshot <stream>
   Take a snapshot of the specified stream
@@ -12,17 +12,17 @@ btrbck list
 btrbck list <stream>
   List the snapshots of the specified stream
 
-btrbck push <stream> [<user>@]<host>:<repo path> [<remote stream>]
+btrbck push <stream> [<user>@]<host>[:<port>] <repo path> [<remote stream>]
   Push the snapshots to the specified repository. If <remote stream> is not
   given, use the stream name of the local stream. This triggers a prune of the
   remote stream.
 
-btrbck pull [<user>@]<host>:<repo path> [<remote stream>] <stream>
+btrbck pull [<user>@]<host>[:<port>] <repo path> [<remote stream>] <stream>
   Pull the snapshots from the specified repository. If <remote stream> is
   not given, use the stream name of the local stream.
 
-btrbck sync
-  Perform the synchronizations as specified in the repository configuration
+btrbck process
+  Take snapshots and perform synchronizations as specified in the repository configuration
 
 btrbck prune
   prune the snapshots of all streams
@@ -37,5 +37,17 @@ btrbck create
 btrbck create <stream>
   Create a new stream
 
+btrbck delete
+  Delete a repository
+  
+btrbck delete <stream>
+  Deleta a stream in
+  
+btrbck restore 
+  Restore the latest snapshot of all streams in the repository
+  
+btrbck restore <stream> 
+  Restore the latest snapshot of a specific stream
+  
 btrbck restore <stream> <snapshot number>
   Restore a snapshot of a stream

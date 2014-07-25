@@ -9,6 +9,9 @@ import java.util.UUID;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
+
 @XmlRootElement
 public class VersionHistory implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -77,7 +80,20 @@ public class VersionHistory implements Serializable {
 		return entries.get(entries.size() - 1);
 	}
 
+	/**
+	 * Add a restore entry. If the last entry is already a restore for the same
+	 * snapshot, do nothing.
+	 */
 	public void addRestore(UUID streamId, int restoredSnapshotNr) {
+		VersionHistoryEntry lastEntry = getLastEntry();
+		if (lastEntry instanceof RestoreVersionHistoryEntry) {
+			RestoreVersionHistoryEntry lastRestoreEntry = (RestoreVersionHistoryEntry) lastEntry;
+			if (lastRestoreEntry.streamId.equals(streamId)
+					&& lastRestoreEntry.restoredSnapshotNr == restoredSnapshotNr) {
+				// skip adding an entry
+				return;
+			}
+		}
 		RestoreVersionHistoryEntry entry = new RestoreVersionHistoryEntry(
 				streamId);
 		entry.restoredSnapshotNr = restoredSnapshotNr;
@@ -91,6 +107,91 @@ public class VersionHistory implements Serializable {
 			entries.add(new SnapshotVersionHistoryEntry(streamId));
 		} else {
 			((SnapshotVersionHistoryEntry) entry).count++;
+		}
+	}
+
+	private static class SnapshotIterator {
+		PeekingIterator<VersionHistoryEntry> it;
+		int remainingCount;
+
+		public SnapshotIterator(VersionHistory history) {
+			it = Iterators.peekingIterator(history.entries.iterator());
+			advanceToNextEntry();
+		}
+
+		private void advanceToNextEntry() {
+			// skip leading non-snapshot entries
+			while (it.hasNext()) {
+				if (!(it.peek() instanceof SnapshotVersionHistoryEntry)) {
+					it.next();
+				} else {
+					break;
+				}
+			}
+
+			if (it.hasNext()) {
+				remainingCount = peek().count;
+			}
+		}
+
+		private SnapshotVersionHistoryEntry peek() {
+			SnapshotVersionHistoryEntry peek = (SnapshotVersionHistoryEntry) it
+					.peek();
+			return peek;
+		}
+
+		int remainingSameUuid() {
+			return remainingCount;
+		}
+
+		UUID nextUuid() {
+			return peek().streamId;
+		}
+
+		boolean hasNext() {
+			return it.hasNext();
+		}
+
+		void advance(UUID id, int count) {
+			if (!id.equals(nextUuid())) {
+				throw new RuntimeException("id mismatch");
+			}
+			int toGo = count;
+			if (remainingCount > count) {
+				remainingCount -= count;
+			} else {
+				toGo -= remainingCount;
+				it.next();
+				advanceToNextEntry();
+				if (hasNext() && id.equals(nextUuid())) {
+					advance(id, toGo);
+				}
+			}
+		}
+	}
+
+	public boolean isAncestorOf(VersionHistory child) {
+		SnapshotIterator itParent = new SnapshotIterator(this);
+		SnapshotIterator itChild = new SnapshotIterator(child);
+
+		while (itParent.hasNext() && itChild.hasNext()) {
+			if (!itParent.nextUuid().equals(itChild.nextUuid())) {
+				// different id encountered, no ancestor-child relation
+				return false;
+			}
+			int remaining = Math.min(itParent.remainingSameUuid(),
+					itChild.remainingSameUuid());
+			UUID id = itParent.nextUuid();
+			itParent.advance(id, remaining);
+			itChild.advance(id, remaining);
+		}
+
+		if (!itParent.hasNext()) {
+			// we ate the whole parent, so the histories are equal or a
+			// parent-child relationship
+			return true;
+		} else {
+			return false;
 		}
 	}
 

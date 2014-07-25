@@ -3,7 +3,7 @@ package com.github.ruediste1.btrbck;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
+import java.util.Collections;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -72,12 +72,17 @@ public class StreamService {
 					"Error while reading stream config file", e);
 		}
 
-		if (!Objects.equals(name, readStream.name)) {
-			throw new DisplayException("Name " + readStream.name
-					+ " does not equal the expected name of " + name);
-		}
+		readStream.name = name;
 		readStream.streamRepository = repository;
 
+		// read id
+		try {
+			readStream.id = UUID.fromString(new String(Files
+					.readAllBytes(readStream.getStreamUuidFile()), "UTF-8"));
+		} catch (IOException e) {
+			throw new RuntimeException("Error while reading stream id file", e);
+
+		}
 		// read version history
 		try {
 			readStream.versionHistory = (VersionHistory) ctx
@@ -110,6 +115,9 @@ public class StreamService {
 		Files.createDirectory(stream.getReceiveTempDir());
 
 		stream.id = UUID.randomUUID();
+		Files.write(stream.getStreamUuidFile(),
+				stream.id.toString().getBytes("UTF-8"));
+
 		stream.initialRetentionPeriod = Period.days(1);
 
 		if (stream.streamRepository instanceof ApplicationStreamRepository) {
@@ -134,7 +142,7 @@ public class StreamService {
 		return stream;
 	}
 
-	private void writeVersionHistory(Stream stream) {
+	public void writeVersionHistory(Stream stream) {
 		try {
 			ctx.createMarshaller().marshal(stream.versionHistory,
 					stream.getVersionHistoryFile().toFile());
@@ -145,6 +153,15 @@ public class StreamService {
 
 	public Set<String> getStreamNames(StreamRepository repository) {
 		return Util.getDirectoryNames(repository.getBaseDirectory());
+	}
+
+	public void deleteStream(Path repoLocation, String name) {
+		deleteStream(readStream(
+				streamRepositoryService.readRepository(repoLocation), name));
+	}
+
+	public void deleteStream(StreamRepository repo, String name) {
+		deleteStream(readStream(repo, name));
 	}
 
 	public void deleteStream(Stream stream) {
@@ -203,8 +220,53 @@ public class StreamService {
 		writeVersionHistory(stream);
 
 		btrfsService.takeSnapshot(repo.getWorkingDirectory(stream),
-				snapshot.getSnapshotDir());
+				snapshot.getSnapshotDir(), true);
 		return snapshot;
+	}
+
+	public void restoreLatestSnapshot(Stream stream) {
+		TreeMap<Integer, Snapshot> snapshots = getSnapshots(stream);
+		if (snapshots.isEmpty()) {
+			throw new DisplayException(
+					"Cannot restore latest snapshot. Stream " + stream.name
+							+ " does not contain any snapshots");
+		}
+		restoreSnapshot(stream, Collections.max(snapshots.keySet()));
+	}
+
+	public void restoreSnapshot(Stream stream, int snapshotNr) {
+		TreeMap<Integer, Snapshot> snapshots = getSnapshots(stream);
+		Snapshot snapshot = snapshots.get(snapshotNr);
+		if (snapshot == null) {
+			throw new DisplayException("Cannot restore snapshot. Stream "
+					+ stream.name + " does not contain snapshot number "
+					+ snapshotNr);
+		}
+		restoreSnapshot(snapshot);
+	}
+
+	/**
+	 * Restore a snapshot.
+	 * 
+	 * The following list outlines the steps taken:
+	 * <ol>
+	 * <li>delete working directory</li>
+	 * <li>update version file</li>
+	 * <li>restore working directory</li>
+	 * </ol>
+	 * 
+	 * If the process is aborted at any stage (power loss), the command can
+	 * simply be executed again.
+	 */
+	public void restoreSnapshot(Snapshot snapshot) {
+		Stream stream = snapshot.stream;
+		ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
+
+		btrfsService.deleteSubVolume(repo.getWorkingDirectory(stream));
+		VersionHistory history = stream.versionHistory;
+		history.addRestore(stream.id, snapshot.nr);
+		btrfsService.takeSnapshot(snapshot.getSnapshotDir(),
+				repo.getWorkingDirectory(stream), false);
 	}
 
 	public void deleteSnapshot(Snapshot snapshot) {
@@ -217,4 +279,5 @@ public class StreamService {
 					name));
 		}
 	}
+
 }

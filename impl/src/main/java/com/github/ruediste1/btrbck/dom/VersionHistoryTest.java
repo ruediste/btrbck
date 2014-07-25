@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -96,6 +97,37 @@ public class VersionHistoryTest {
 		assertThat(nodes.get(3).parents, hasSize(1));
 		assertThat(nodes.get(3).parents, hasItem(nodes.get(2)));
 		assertThat(nodes.get(3).snapshotNr, is(3));
+
+	}
+
+	@Test
+	public void testIsAncestorOf() throws Exception {
+		VersionHistory h1 = new VersionHistory();
+		VersionHistory h2 = new VersionHistory();
+		UUID id1 = UUID.randomUUID();
+		UUID id2 = UUID.randomUUID();
+
+		assertTrue(h1.isAncestorOf(h2));
+		assertTrue(h2.isAncestorOf(h1));
+
+		h2.addVersion(id1);
+		h2.addVersion(id1);
+		assertTrue(h1.isAncestorOf(h2));
+		assertFalse(h2.isAncestorOf(h1));
+
+		h1.addVersion(id1);
+		h1.addVersion(id1);
+		assertTrue(h1.isAncestorOf(h2));
+		assertTrue(h2.isAncestorOf(h1));
+
+		h2.addVersion(id1);
+		assertTrue(h1.isAncestorOf(h2));
+		assertFalse(h2.isAncestorOf(h1));
+
+		h1.addVersion(id2);
+		h1.addVersion(id2);
+		assertFalse(h1.isAncestorOf(h2));
+		assertFalse(h2.isAncestorOf(h1));
 
 	}
 }

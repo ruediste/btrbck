@@ -42,26 +42,25 @@ public class StreamRepositoryServiceTest extends TestBase {
 
 	@Test
 	public void testCreateBackupRepository() throws IOException {
-		testRepoCreate(new BackupStreamRepository());
+		testRepoCreate(BackupStreamRepository.class);
 	}
 
 	@Test
 	public void testCreateApplicationRepository() throws IOException {
-		testRepoCreate(new ApplicationStreamRepository());
+		testRepoCreate(ApplicationStreamRepository.class);
 	}
 
-	private Path testRepoCreate(StreamRepository repo) throws IOException {
+	private Path testRepoCreate(Class<? extends StreamRepository> clazz)
+			throws IOException {
 		repoPath = createTempDirectory();
-		repoPath.toFile().deleteOnExit();
-		repo.rootDirectory = repoPath;
-		service.createRepository(repo);
+		StreamRepository repo = service.createRepository(clazz, repoPath);
 		assertTrue(Files.exists(repo.getRepositoryXmlFile()));
 		return repoPath;
 	}
 
 	@Test
 	public void testReadRepository() throws Exception {
-		Path path = testRepoCreate(new BackupStreamRepository());
+		Path path = testRepoCreate(BackupStreamRepository.class);
 		StreamRepository repo = service.readRepository(path);
 		assertThat(repo instanceof BackupStreamRepository, is(true));
 		assertThat(repo.rootDirectory, equalTo(path));

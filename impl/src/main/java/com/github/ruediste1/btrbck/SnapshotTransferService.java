@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -13,7 +14,6 @@ import javax.inject.Singleton;
 import com.github.ruediste1.btrbck.SshService.SshConnection;
 import com.github.ruediste1.btrbck.SyncService.SendFileSpec;
 import com.github.ruediste1.btrbck.dom.RemoteRepository;
-import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
 import com.github.ruediste1.btrbck.dto.SendFile;
@@ -91,22 +91,30 @@ public class SnapshotTransferService {
 	 * </p>
 	 */
 	public void receiveSnapshots(StreamRepository repo, String streamName,
-			InputStream input, OutputStream output) {
+			InputStream input, OutputStream output,
+			boolean createStreamIfNecessary) {
 		try {
 			// load or create stream
 			Stream stream = streamService.readStream(repo, streamName);
+			boolean isNew = false;
 			if (stream == null) {
 				// stream does not exist, create
+				if (!createStreamIfNecessary) {
+					throw new DisplayException("stream " + streamName
+							+ " does not exist in repository "
+							+ repo.rootDirectory.toAbsolutePath());
+				}
 				stream = streamService.createStream(repo, streamName);
+				isNew = true;
 			}
 			Util.send(READY_INDICATOR, output);
 			Util.waitFor(START_COMMAND, input);
 
 			// send available snapshots
-			Util.send(syncService.calculateStreamState(stream), output);
+			Util.send(syncService.calculateStreamState(stream, isNew), output);
 
 			// receive missing snapshots
-			receiveMissingSnapshots(stream, input);
+			receiveMissingSnapshots(stream, isNew, input);
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
 
@@ -160,10 +168,10 @@ public class SnapshotTransferService {
 	 * </p>
 	 */
 	public void push(Stream stream, RemoteRepository repo,
-			String remoteStreamName) {
+			String remoteStreamName, boolean createRemoteIfNecessary) {
 		try {
 			SshConnection process = sshService.receiveSnapshots(repo,
-					remoteStreamName);
+					remoteStreamName, createRemoteIfNecessary);
 			InputStream input = process.getInputStream();
 			OutputStream output = process.getOutputStream();
 
@@ -189,11 +197,30 @@ public class SnapshotTransferService {
 	/**
 	 * Open a ssh connection to the target, start the btrbck tool, send it the
 	 * available snapshots and read the missing snapshots.
+	 * 
+	 * @param stream
+	 *            the stream to pull into, or null if a new stream is to be
+	 *            created
 	 */
-	public void pull(Stream stream, RemoteRepository repo,
-			String remoteStreamName) {
+	public void pull(StreamRepository localRepo, String localStreamName,
+			RemoteRepository remoteRepo, String remoteStreamName,
+			boolean createStreamIfNecessary) {
 		try {
-			SshConnection connection = sshService.sendSnapshots(repo,
+			Stream stream = streamService
+					.readStream(localRepo, localStreamName);
+			boolean isNewStream = false;
+			if (stream == null) {
+				// the stream was not found, a new one must be created
+				if (!createStreamIfNecessary) {
+					throw new DisplayException("Local stream "
+							+ localStreamName + " was not found in repository "
+							+ localRepo.rootDirectory.toAbsolutePath());
+				}
+				stream = streamService.createStream(localRepo, localStreamName);
+				isNewStream = true;
+			}
+
+			SshConnection connection = sshService.sendSnapshots(remoteRepo,
 					remoteStreamName);
 			InputStream input = connection.getInputStream();
 
@@ -201,11 +228,12 @@ public class SnapshotTransferService {
 			Util.waitFor(READY_INDICATOR, input);
 
 			// send available snapshots
-			Util.send(syncService.calculateStreamState(stream),
-					connection.getOutputStream());
+			StreamState streamState = syncService.calculateStreamState(stream,
+					isNewStream);
+			Util.send(streamState, connection.getOutputStream());
 
 			// process incoming snapshots
-			receiveMissingSnapshots(stream, input);
+			receiveMissingSnapshots(stream, isNewStream, input);
 
 			connection.close();
 		} catch (Exception e) {
@@ -215,10 +243,23 @@ public class SnapshotTransferService {
 		}
 	}
 
-	void receiveMissingSnapshots(Stream stream, final InputStream input)
-			throws ClassNotFoundException, IOException {
+	void receiveMissingSnapshots(Stream stream, boolean isNew,
+			final InputStream input) throws ClassNotFoundException, IOException {
 		streamService.clearReceiveTempDir(stream);
 		SendFileListHeader header = Util.read(SendFileListHeader.class, input);
+
+		// if the stream is new
+		if (isNew && header.streamConfiguration != null) {
+			Files.write(stream.getStreamConfigFile(),
+					header.streamConfiguration);
+		}
+
+		// check version histories for compatibility
+		if (!stream.versionHistory.isAncestorOf(header.targetVersionHistory)) {
+			throw new DisplayException(
+					"the history of the target stream is not an ancestor of the source history");
+		}
+
 		for (int i = 0; i < header.count; i++) {
 			SendFile sendFile = Util.read(SendFile.class, input);
 			btrfsService.receive(stream.getReceiveTempDir(),
@@ -234,12 +275,12 @@ public class SnapshotTransferService {
 							}
 						}
 					});
-			Snapshot snapshot = Snapshot.parse(stream, sendFile.snapshotName);
 
 			// move to final destination
 			Path tmpSnapshot = stream.getReceiveTempDir().resolve(
 					sendFile.snapshotName);
-			btrfsService.takeSnapshot(tmpSnapshot, stream.getSnapshotsDir());
+			btrfsService.takeSnapshot(tmpSnapshot, stream.getSnapshotsDir(),
+					true);
 			btrfsService.deleteSubVolume(tmpSnapshot);
 		}
 	}
@@ -251,6 +292,12 @@ public class SnapshotTransferService {
 		{
 			SendFileListHeader header = new SendFileListHeader();
 			header.count = sendFiles.size();
+			header.targetVersionHistory = stream.versionHistory;
+			if (streamState.isNewStream) {
+				// if the stream is new, send the configuration
+				header.streamConfiguration = Files.readAllBytes(stream
+						.getStreamConfigFile());
+			}
 			Util.send(header, output);
 		}
 		for (SendFileSpec sendFile : sendFiles) {

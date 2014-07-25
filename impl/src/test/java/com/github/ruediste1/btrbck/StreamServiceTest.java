@@ -35,9 +35,8 @@ public class StreamServiceTest extends TestBase {
 
 	@Before
 	public void setUp() throws IOException {
-		repository = new ApplicationStreamRepository();
-		repository.rootDirectory = createTempDirectory();
-		repositoryService.createRepository(repository);
+		repository = repositoryService.createRepository(
+				ApplicationStreamRepository.class, createTempDirectory());
 	}
 
 	@After
@@ -140,5 +139,28 @@ public class StreamServiceTest extends TestBase {
 		service.deleteSnapshot(snapshot);
 		assertFalse(Files.exists(snapshot.getSnapshotDir()));
 		assertTrue(service.getSnapshots(stream).isEmpty());
+	}
+
+	@Test
+	public void testRestoreSnapshot() throws Exception {
+		Stream stream = createStream("test");
+		// create test file
+
+		Path testFile = repository.getWorkingDirectory(stream).resolve(
+				"test.txt");
+		Files.copy(new ByteArrayInputStream("Hello".getBytes("UTF-8")),
+				testFile);
+
+		Snapshot snapshot = service.takeSnapshot(stream);
+
+		assertTrue(Files.exists(testFile));
+		Files.delete(testFile);
+		assertFalse(Files.exists(testFile));
+
+		service.restoreSnapshot(snapshot);
+		assertTrue(Files.exists(testFile));
+
+		// test if file is writeable
+		Files.delete(testFile);
 	}
 }

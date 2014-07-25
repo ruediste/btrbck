@@ -13,6 +13,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -29,6 +30,7 @@ import com.github.ruediste1.btrbck.dom.RemoteRepository;
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
+import com.github.ruediste1.btrbck.dom.VersionHistory;
 import com.github.ruediste1.btrbck.test.TestBase;
 
 public class SnapshotTransferServiceTest extends TestBase {
@@ -59,15 +61,16 @@ public class SnapshotTransferServiceTest extends TestBase {
 		}
 
 		@Override
-		public SshConnection receiveSnapshots(RemoteRepository repoUnused,
-				String remoteStreamName) throws IOException {
+		public SshConnection receiveSnapshots(RemoteRepository repo,
+				String remoteStreamName, final boolean createRemoteIfNecessary)
+				throws IOException {
 			return doInThread(remoteStreamName, new ThreadOperation() {
 
 				@Override
 				public void run(StreamRepository repo, String streamName,
 						InputStream input, OutputStream output) {
 					transferService.receiveSnapshots(repo, streamName, input,
-							output);
+							output, createRemoteIfNecessary);
 
 				}
 			});
@@ -139,13 +142,11 @@ public class SnapshotTransferServiceTest extends TestBase {
 
 	@Before
 	public void setup() throws Exception {
-		repo1 = new ApplicationStreamRepository();
-		repo1.rootDirectory = createTempDirectory();
-		repositoryService.createRepository(repo1);
+		repo1 = repositoryService.createRepository(
+				ApplicationStreamRepository.class, createTempDirectory());
 
-		repo2 = new BackupStreamRepository();
-		repo2.rootDirectory = createTempDirectory();
-		repositoryService.createRepository(repo2);
+		repo2 = repositoryService.createRepository(
+				BackupStreamRepository.class, createTempDirectory());
 
 		transferService.sshService = new SshServiceTestDouble(repo2);
 	}
@@ -161,17 +162,43 @@ public class SnapshotTransferServiceTest extends TestBase {
 	@Test
 	public void transferSnapshot() throws Exception {
 		Stream stream = streamService.createStream(repo1, "test");
+		Stream targetStream = streamService.createStream(repo2, "test2");
+
 		Path testFile = repo1.getWorkingDirectory(stream).resolve("test.txt");
 		Files.copy(new ByteArrayInputStream("Hello".getBytes("UTF-8")),
 				testFile);
 		Snapshot snapshot = streamService.takeSnapshot(stream);
-		transferService.push(stream, null, "test2");
+		transferService.push(stream, null, "test2", false);
 
-		Stream targetStream = streamService.readStream(repo2, "test2");
 		assertThat(targetStream, not(nullValue()));
 		Path snapshotDir = targetStream.getSnapshotsDir().resolve(
 				snapshot.getSnapshotName());
 		assertThat(Files.exists(snapshotDir), is(true));
 		assertThat(Files.exists(snapshotDir.resolve("test.txt")), is(true));
+	}
+
+	@Test
+	public void transferSnapshotCreateStream() throws Exception {
+		Stream stream = streamService.createStream(repo1, "test");
+		transferService.push(stream, null, "test2", true);
+		Stream targetStream = streamService.readStream(repo2, "test2");
+		assertThat(targetStream, not(nullValue()));
+	}
+
+	@Test(expected = DisplayException.class)
+	public void transferSnapshotVersionConflict() throws Exception {
+		Stream stream = streamService.createStream(repo1, "test");
+		// take and transfer first snapshot
+		streamService.takeSnapshot(stream);
+		transferService.push(stream, null, "test2", true);
+
+		// change UID, reset history, take 2nd snapshot. This leads to an
+		// incompatible history
+		stream.id = UUID.randomUUID();
+		stream.versionHistory = new VersionHistory();
+		streamService.takeSnapshot(stream);
+
+		// push should fail
+		transferService.push(stream, null, "test2", false);
 	}
 }

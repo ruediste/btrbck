@@ -1,26 +1,53 @@
 package com.github.ruediste1.btrbck.dom;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SshTarget {
 	private Integer port;
-	private String keyFile;
+	private File keyFile;
 	private String host;
+	private String user;
 	private List<String> parameters = new ArrayList<>();
 
 	public SshTarget() {
 	}
 
-	public SshTarget(String host) {
-		this.host = host;
+	/**
+	 * Create a new {@link SshTarget} by parsing the given string. the format is
+	 * 
+	 * <pre>
+	 * {@code
+	 * [<user>@]<host>[:<port>]
+	 * }
+	 * </pre>
+	 */
+	public static SshTarget parse(String s) {
+		Pattern p = Pattern
+				.compile("((?<user>[^@]*)@)?(?<host>[^:]+)(:(?<port>.*))?");
+		Matcher matcher = p.matcher(s);
+		if (!matcher.matches()) {
+			return null;
+		}
+		SshTarget result = new SshTarget();
+		result = result.withHost(matcher.group("host"));
+		result = result.withUser(matcher.group("user"));
+		String portString = matcher.group("port");
+		if (portString != null) {
+			result = result.withPort(Integer.parseInt(portString));
+		}
+		return result;
 	}
 
 	private SshTarget(SshTarget other) {
 		host = other.host;
 		port = other.port;
 		keyFile = other.keyFile;
+		user = other.user;
 		parameters.addAll(other.parameters);
 	}
 
@@ -34,11 +61,11 @@ public class SshTarget {
 		return result;
 	}
 
-	public String getKeyFile() {
+	public File getKeyFile() {
 		return keyFile;
 	}
 
-	public SshTarget withKeyFile(String keyFile) {
+	public SshTarget withKeyFile(File keyFile) {
 		SshTarget result = new SshTarget(this);
 		result.keyFile = keyFile;
 		return result;
@@ -62,6 +89,15 @@ public class SshTarget {
 		SshTarget result = new SshTarget(this);
 		result.parameters.add(parameter);
 		return result;
+	}
 
+	public String getUser() {
+		return user;
+	}
+
+	public SshTarget withUser(String user) {
+		SshTarget result = new SshTarget(this);
+		result.user = user;
+		return result;
 	}
 }

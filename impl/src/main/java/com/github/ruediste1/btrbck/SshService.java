@@ -6,12 +6,12 @@ import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 
 import javax.inject.Singleton;
 
 import com.github.ruediste1.btrbck.dom.RemoteRepository;
 import com.github.ruediste1.btrbck.dom.SshTarget;
-import com.google.common.base.Strings;
 
 @Singleton
 public class SshService {
@@ -49,15 +49,19 @@ public class SshService {
 	}
 
 	private ProcessBuilder processBuilder(SshTarget target, String... commands) {
+		return processBuilder(target, Arrays.asList(commands));
+	}
 
+	private ProcessBuilder processBuilder(SshTarget target,
+			List<String> commands) {
 		// construct command
 		LinkedList<String> list = new LinkedList<String>();
 		list.add("ssh");
 
 		// add keyfile
-		if (!Strings.isNullOrEmpty(target.getKeyFile())) {
+		if (target.getKeyFile() != null) {
 			list.add("-i");
-			list.add(target.getKeyFile());
+			list.add(target.getKeyFile().getAbsolutePath());
 		}
 
 		// add port
@@ -73,7 +77,7 @@ public class SshService {
 		list.add(target.getHost());
 
 		// add commands
-		list.addAll(Arrays.asList(commands));
+		list.addAll(commands);
 
 		return new ProcessBuilder().redirectError(Redirect.INHERIT).command(
 				list);
@@ -87,9 +91,16 @@ public class SshService {
 	}
 
 	public SshConnection receiveSnapshots(RemoteRepository repo,
-			String remoteStreamName) throws IOException {
-		Process process = processBuilder(repo.sshTarget, "btrbck",
-				"receiveSnapshots", repo.location, remoteStreamName).start();
+			String remoteStreamName, boolean createRemoteIfNecessary)
+			throws IOException {
+		List<String> commands = Arrays.asList(new String[] { "btrbck",
+				"receiveSnapshots" });
+		if (createRemoteIfNecessary) {
+			commands.add("-c");
+		}
+		commands.add(repo.location);
+		commands.add(remoteStreamName);
+		Process process = processBuilder(repo.sshTarget, commands).start();
 		return new SshConnectionimpl(process);
 	}
 }

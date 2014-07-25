@@ -2,8 +2,11 @@ package com.github.ruediste1.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 import javax.inject.Inject;
 
@@ -13,22 +16,34 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import com.github.ruediste1.btrbck.DisplayException;
+import com.github.ruediste1.btrbck.GuiceModule;
+import com.github.ruediste1.btrbck.SnapshotTransferService;
 import com.github.ruediste1.btrbck.StreamRepositoryService;
 import com.github.ruediste1.btrbck.StreamService;
+import com.github.ruediste1.btrbck.Util;
 import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
 import com.github.ruediste1.btrbck.dom.BackupStreamRepository;
+import com.github.ruediste1.btrbck.dom.RemoteRepository;
+import com.github.ruediste1.btrbck.dom.Snapshot;
+import com.github.ruediste1.btrbck.dom.SshTarget;
+import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
 import com.google.common.io.ByteStreams;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 
 public class CliMain {
 	@Option(name = "-r", usage = "the location of the stream repository to use")
 	File repositoryLocation;
 
-	@Option(name = "-c", usage = "if given, missing remote streams will be created during the push and the sync command")
-	boolean createRemoteSnapshots;
+	@Option(name = "-c", usage = "if given, missing target streams will be created during the push, pull and the sync command")
+	boolean createTargetStreams;
 
 	@Option(name = "-a", usage = "if given, the initialize command creates an application stream repository")
 	boolean applicationRepository;
+
+	@Option(name = "-i", usage = "the key file to be used by ssh")
+	File keyFile;
 
 	@Argument(hidden = true)
 	List<String> arguments = new ArrayList<>();
@@ -39,37 +54,49 @@ public class CliMain {
 	@Inject
 	StreamService streamService;
 
+	@Inject
+	SnapshotTransferService streamTransferService;
+
 	public static void main(String... args) throws Exception {
 		new CliMain().doMain(args);
 	}
 
 	private void doMain(String[] args) throws Exception {
-		parseCmdLine(args);
+		Injector injector = Guice.createInjector(new GuiceModule());
+		Util.setInjector(injector);
+		Util.injectMembers(this);
 
 		try {
-			String command = arguments.get(0);
-			if ("snapshot".equals(command)) {
-				cmdSnapshot();
-			} else if ("list".equals(command)) {
-				cmdList();
-			} else if ("push".equals(command)) {
-				cmdPush();
-			} else if ("pull".equals(command)) {
-				cmdPush();
-			} else if ("sync".equals(command)) {
-				cmdSync();
-			} else if ("prune".equals(command)) {
-				cmdPrune();
-			} else if ("create".equals(command)) {
-				cmdCreate();
-			} else if ("restore".equals(command)) {
-				cmdRestore();
-			}
+			processCommand(args);
 		} catch (DisplayException e) {
 			System.err.println("Error: " + e.getMessage());
 			System.exit(1);
 		}
+	}
 
+	void processCommand(String[] args) throws IOException {
+		parseCmdLine(args);
+
+		String command = arguments.get(0);
+		if ("snapshot".equals(command)) {
+			cmdSnapshot();
+		} else if ("list".equals(command)) {
+			cmdList();
+		} else if ("push".equals(command)) {
+			cmdPush();
+		} else if ("pull".equals(command)) {
+			cmdPull();
+		} else if ("process".equals(command)) {
+			cmdProcess();
+		} else if ("prune".equals(command)) {
+			cmdPrune();
+		} else if ("create".equals(command)) {
+			cmdCreate();
+		} else if ("delete".equals(command)) {
+			cmdDelete();
+		} else if ("restore".equals(command)) {
+			cmdRestore();
+		}
 	}
 
 	private void parseCmdLine(String[] args) {
@@ -109,48 +136,120 @@ public class CliMain {
 
 	}
 
-	private void cmdRestore() {
-		// TODO Auto-generated method stub
-
-	}
-
 	private void cmdPrune() {
 		// TODO Auto-generated method stub
 
 	}
 
-	private void cmdSync() {
+	private void cmdProcess() {
 		// TODO Auto-generated method stub
 
 	}
 
 	private void cmdPush() {
-		// TODO Auto-generated method stub
+		if (arguments.size() < 4) {
+			throw new DisplayException("Not enought arguments");
+		}
+
+		if (arguments.size() > 5) {
+			throw new DisplayException("Too many arguments");
+		}
+
+		String streamName = arguments.get(1);
+		SshTarget sshTarget = SshTarget.parse(arguments.get(2)).withKeyFile(
+				keyFile);
+
+		String remoteStreamName = streamName;
+		if (arguments.size() == 5) {
+			remoteStreamName = arguments.get(4);
+		}
+
+		RemoteRepository remoteRepo = new RemoteRepository();
+		remoteRepo.location = arguments.get(3);
+		remoteRepo.sshTarget = sshTarget;
+
+		StreamRepository repo = readRepository();
+		Stream stream = streamService.readStream(repo, streamName);
+
+		streamTransferService.push(stream, remoteRepo, remoteStreamName,
+				createTargetStreams);
+	}
+
+	private void cmdPull() {
+		if (arguments.size() < 4) {
+			throw new DisplayException("Not enought arguments");
+		}
+
+		if (arguments.size() > 5) {
+			throw new DisplayException("Too many arguments");
+		}
+
+		SshTarget sshTarget = SshTarget.parse(arguments.get(1)).withKeyFile(
+				keyFile);
+		String remoteRepoPath = arguments.get(2);
+
+		String remoteStreamName = arguments.get(3);
+
+		String streamName = remoteStreamName;
+		if (arguments.size() == 5) {
+			streamName = arguments.get(4);
+		}
+
+		RemoteRepository remoteRepo = new RemoteRepository();
+		remoteRepo.location = remoteRepoPath;
+		remoteRepo.sshTarget = sshTarget;
+
+		StreamRepository repo = readRepository();
+
+		streamTransferService.pull(repo, streamName, remoteRepo,
+				remoteStreamName, createTargetStreams);
 
 	}
 
 	private void cmdList() {
-		// TODO Auto-generated method stub
+		if (arguments.size() == 1) {
+			// list streams in repository
+			StreamRepository repo = readRepository();
+			System.out.println("Streams in repository "
+					+ repo.rootDirectory.toAbsolutePath() + ":");
+			for (String name : streamService.getStreamNames(repo)) {
+				System.out.println(name);
+			}
+		} else if (arguments.size() == 2) {
+			StreamRepository repo = readRepository();
+			Stream stream = streamService.readStream(repo, arguments.get(1));
+			TreeMap<Integer, Snapshot> snapshots = streamService
+					.getSnapshots(stream);
+			System.out.println("Snapshots in stream " + stream.name
+					+ " in repository " + repo.rootDirectory.toAbsolutePath()
+					+ ":");
+			for (Snapshot s : snapshots.values()) {
+				System.out.println(s.getSnapshotName());
+			}
+		} else {
+			throw new DisplayException("too many arguments");
+		}
 
 	}
 
 	private void cmdCreate() throws IOException {
 		if (arguments.size() == 1) {
 			// create repository
+			Path location;
+			if (repositoryLocation != null) {
+				location = repositoryLocation.toPath();
+			} else {
+				location = Paths.get("");
+			}
+
 			StreamRepository repo;
 			if (applicationRepository) {
-				repo = new ApplicationStreamRepository();
+				repo = streamRepositoryService.createRepository(
+						ApplicationStreamRepository.class, location);
 			} else {
-				repo = new BackupStreamRepository();
+				repo = streamRepositoryService.createRepository(
+						BackupStreamRepository.class, location);
 			}
-
-			if (repositoryLocation != null) {
-				repo.rootDirectory = repositoryLocation.toPath();
-			} else {
-				repo.rootDirectory = new File(".").toPath();
-			}
-
-			streamRepositoryService.createRepository(repo);
 
 			System.out.println("Created repository in "
 					+ repo.rootDirectory.toAbsolutePath());
@@ -164,15 +263,66 @@ public class CliMain {
 		}
 	}
 
+	private void cmdDelete() {
+		if (arguments.size() == 1) {
+			StreamRepository repo = readRepository();
+			// delete repository
+			streamService.deleteStreams(repo);
+			streamRepositoryService.deleteEmptyRepository(repo);
+		} else if (arguments.size() == 2) {
+			StreamRepository repo = readRepository();
+			streamService.deleteStream(repo, arguments.get(1));
+		} else {
+			throw new DisplayException("too many arguments");
+		}
+
+	}
+
 	private void cmdSnapshot() {
-		// TODO Auto-generated method stub
+		if (arguments.size() == 1) {
+			StreamRepository repo = readRepository();
+			for (String name : streamService.getStreamNames(repo)) {
+				Stream stream = streamService.readStream(repo, name);
+				streamService.takeSnapshot(stream);
+			}
+		} else if (arguments.size() == 2) {
+			StreamRepository repo = readRepository();
+			Stream stream = streamService.readStream(repo, arguments.get(1));
+			streamService.takeSnapshot(stream);
+		} else {
+			throw new DisplayException("too many arguments");
+		}
+	}
+
+	private void cmdRestore() {
+		if (arguments.size() == 1) {
+			// restore the latest snapshot of all streams
+			StreamRepository repo = readRepository();
+			for (String name : streamService.getStreamNames(repo)) {
+				Stream stream = streamService.readStream(repo, name);
+				streamService.restoreLatestSnapshot(stream);
+			}
+		} else if (arguments.size() == 2) {
+			// restore the latest snapshot of a single stream
+			StreamRepository repo = readRepository();
+			Stream stream = streamService.readStream(repo, arguments.get(1));
+			streamService.restoreLatestSnapshot(stream);
+		} else if (arguments.size() == 3) {
+			// restore a specific snapshot of a single stream
+			StreamRepository repo = readRepository();
+			Stream stream = streamService.readStream(repo, arguments.get(1));
+			int snapshotNr = Integer.parseInt(arguments.get(2));
+			streamService.restoreSnapshot(stream, snapshotNr);
+		} else {
+			throw new DisplayException("too many arguments");
+		}
 
 	}
 
 	private StreamRepository readRepository() {
 		File path = repositoryLocation;
 		if (path == null) {
-			path = new File(".");
+			path = Paths.get("").toFile();
 		}
 		return streamRepositoryService.readRepository(path.toPath());
 	}

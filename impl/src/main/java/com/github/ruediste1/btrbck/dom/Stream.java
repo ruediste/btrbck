@@ -13,9 +13,10 @@ import org.joda.time.Period;
 @XmlRootElement
 public class Stream {
 
-	@XmlAttribute
+	@XmlTransient
 	public UUID id;
-	@XmlAttribute
+
+	@XmlTransient
 	public String name;
 
 	@XmlAttribute
@@ -30,6 +31,10 @@ public class Stream {
 
 	public Path getStreamConfigFile() {
 		return getStreamMetaDirectory().resolve(name + ".xml");
+	}
+
+	public Path getStreamUuidFile() {
+		return getStreamMetaDirectory().resolve(name + ".id");
 	}
 
 	public Path getSnapshotRemovalLockFile() {

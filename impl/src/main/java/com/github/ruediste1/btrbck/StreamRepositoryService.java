@@ -32,8 +32,19 @@ public class StreamRepositoryService {
 				shared);
 	}
 
-	public void createRepository(StreamRepository repository)
-			throws IOException {
+	@SuppressWarnings("unchecked")
+	public <T extends StreamRepository> T createRepository(Class<T> clazz,
+			Path location) throws IOException {
+		T repository;
+		if (clazz.equals(ApplicationStreamRepository.class)) {
+			repository = (T) new ApplicationStreamRepository();
+		} else if (clazz.equals(BackupStreamRepository.class)) {
+			repository = (T) new BackupStreamRepository();
+		} else {
+			throw new RuntimeException("unknown repository type " + clazz);
+		}
+		repository.rootDirectory = location;
+
 		// create directories
 		Files.createDirectories(repository.rootDirectory);
 		Files.createDirectories(repository.getBaseDirectory());
@@ -52,6 +63,7 @@ public class StreamRepositoryService {
 		// IputStream in = getClass().getClassLoader().getResourceAsStream(
 		// "repository.template.xml");
 		// Files.copy(in, repository.getRepositoryXmlFile());
+		return repository;
 	}
 
 	/**

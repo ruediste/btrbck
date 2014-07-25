@@ -2,6 +2,7 @@ package com.github.ruediste1.btrbck;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,10 +31,12 @@ public class SyncService {
 
 	/**
 	 * Create a {@link StreamState} for a stream
+	 * 
+	 * @param isNew
 	 */
-	public StreamState calculateStreamState(Stream stream) {
+	public StreamState calculateStreamState(Stream stream, boolean isNew) {
 		StreamState result = new StreamState();
-		result.versionHistory = stream.versionHistory;
+		result.isNewStream = isNew;
 		result.availableSnapshotNumbers.addAll(streamService.getSnapshots(
 				stream).keySet());
 		return result;
@@ -49,8 +52,14 @@ public class SyncService {
 				.getSnapshots(sourceStream);
 		VersionHistory versionHistory = sourceStream.versionHistory;
 
+		Set<Integer> availableSnapshotNumbers;
+		if (stateOfTarget == null) {
+			availableSnapshotNumbers = Collections.emptySet();
+		} else {
+			availableSnapshotNumbers = stateOfTarget.availableSnapshotNumbers;
+		}
 		return determineSendFiles(sourceSnapshots, versionHistory,
-				stateOfTarget.availableSnapshotNumbers);
+				availableSnapshotNumbers);
 	}
 
 	List<SendFileSpec> determineSendFiles(
