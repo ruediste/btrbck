@@ -1,9 +1,12 @@
 package com.github.ruediste1.btrbck;
 
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -19,8 +22,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
+import com.github.ruediste1.btrbck.dom.RestoreVersionHistoryEntry;
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.Stream;
+import com.github.ruediste1.btrbck.dom.VersionHistoryEntry;
 import com.github.ruediste1.btrbck.test.TestBase;
 
 public class StreamServiceTest extends TestBase {
@@ -47,7 +52,7 @@ public class StreamServiceTest extends TestBase {
 
 	@Test
 	public void testCreateAndReadStream() throws IOException {
-		assertNull(service.readStream(repository, "test"));
+		assertNull(service.tryReadStream(repository, "test"));
 		Stream stream = createStream("test");
 		assertNotNull(stream.id);
 		assertNotNull(stream.initialRetentionPeriod);
@@ -64,7 +69,6 @@ public class StreamServiceTest extends TestBase {
 		Files.copy(stream.getVersionHistoryFile(), System.out);
 
 		Stream readStream = service.readStream(repository, "test");
-		assertNotNull(readStream);
 		assertEquals(stream.name, readStream.name);
 		assertEquals(stream.id, readStream.id);
 		assertEquals(stream.versionHistory, readStream.versionHistory);
@@ -162,5 +166,13 @@ public class StreamServiceTest extends TestBase {
 
 		// test if file is writeable
 		Files.delete(testFile);
+
+		// test if the version history written to disk contains
+		// the restore
+		VersionHistoryEntry lastEntry = service.readStream(repository, "test").versionHistory
+				.getLastEntry();
+		assertThat(lastEntry, instanceOf(RestoreVersionHistoryEntry.class));
+		assertThat(((RestoreVersionHistoryEntry) lastEntry).restoredSnapshotNr,
+				is(snapshot.nr));
 	}
 }

@@ -17,6 +17,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.github.ruediste1.btrbck.DisplayException;
 import com.github.ruediste1.btrbck.StreamRepositoryService;
 import com.github.ruediste1.btrbck.StreamService;
 import com.github.ruediste1.btrbck.Util;
@@ -98,7 +99,7 @@ public class CliMainTest extends CliTestBase {
 		assertThat(Files.exists(repo.getRepositoryXmlFile()), is(true));
 		main().processCommand(
 				new String[] { "-r", location.toAbsolutePath().toString(),
-						"delete" });
+						"-sudo", "delete" });
 
 		assertThat(Files.exists(repo.getRepositoryXmlFile()), is(false));
 	}
@@ -114,7 +115,7 @@ public class CliMainTest extends CliTestBase {
 		assertThat(Files.exists(stream.getStreamMetaDirectory()), is(true));
 		main().processCommand(
 				new String[] { "-r", location.toAbsolutePath().toString(),
-						"delete", "test" });
+						"-sudo", "delete", "test" });
 
 		assertThat(Files.exists(stream.getStreamMetaDirectory()), is(false));
 		assertThat(Files.exists(repo.getRepositoryXmlFile()), is(true));
@@ -146,22 +147,46 @@ public class CliMainTest extends CliTestBase {
 		// restore snapshot with given number
 		main().processCommand(
 				new String[] { "-r", location.toAbsolutePath().toString(),
-						"restore", "test", "0" });
+						"-sudo", "restore", "test", "0" });
 		assertThat(Files.exists(testFile), is(true));
 
 		// restore latest snapshot
 		Files.delete(testFile);
 		main().processCommand(
 				new String[] { "-r", location.toAbsolutePath().toString(),
-						"restore", "test" });
+						"-sudo", "restore", "test" });
 		assertThat(Files.exists(testFile), is(true));
 
 		// restore latest snapshot on all streams
 		Files.delete(testFile);
 		main().processCommand(
 				new String[] { "-r", location.toAbsolutePath().toString(),
-						"restore" });
+						"-sudo", "restore" });
 		assertThat(Files.exists(testFile), is(true));
+	}
+
+	@Test
+	public void testCmdSnapshot() throws Exception {
+		Path location = createRepoLocation();
+		ApplicationStreamRepository repo = streamRepositoryService
+				.createRepository(ApplicationStreamRepository.class, location);
+		Stream stream = streamService.createStream(repo, "test");
+
+		assertThat(streamService.getSnapshots(stream).isEmpty(), is(true));
+		main().processCommand("-r", location.toAbsolutePath().toString(),
+				"-sudo", "snapshot", "test");
+		assertThat(streamService.getSnapshots(stream).isEmpty(), is(false));
+	}
+
+	@Test(expected = DisplayException.class)
+	public void testCmdSnapshotInexistantStream() throws Exception {
+		Path location = createRepoLocation();
+		ApplicationStreamRepository repo = streamRepositoryService
+				.createRepository(ApplicationStreamRepository.class, location);
+		streamService.createStream(repo, "test");
+
+		main().processCommand("-r", location.toAbsolutePath().toString(),
+				"-sudo", "snapshot", "test123");
 	}
 
 }

@@ -5,6 +5,7 @@ import javax.xml.bind.JAXBException;
 
 import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
 import com.github.ruediste1.btrbck.dom.BackupStreamRepository;
+import com.github.ruediste1.btrbck.dom.RestoreVersionHistoryEntry;
 import com.github.ruediste1.btrbck.dom.SnapshotVersionHistoryEntry;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.VersionHistory;
@@ -20,6 +21,7 @@ public class GuiceModule extends AbstractModule {
 					JAXBContext.newInstance(Stream.class, VersionHistory.class,
 							VersionHistoryEntry.class,
 							SnapshotVersionHistoryEntry.class,
+							RestoreVersionHistoryEntry.class,
 							BackupStreamRepository.class,
 							ApplicationStreamRepository.class));
 		} catch (JAXBException e) {

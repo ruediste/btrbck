@@ -19,7 +19,15 @@ import com.github.ruediste1.btrbck.dom.Snapshot;
 @Singleton
 public class BtrfsService {
 
-	public boolean useSudo;
+	private ThreadLocal<Boolean> useSudo = new ThreadLocal<>();
+
+	public void setUseSudo(boolean value) {
+		useSudo.set(value);
+	}
+
+	private boolean useSudo() {
+		return Boolean.TRUE.equals(useSudo.get());
+	}
 
 	public void createSubVolume(Path subVolumeDir) {
 		String path = subVolumeDir.toAbsolutePath().toString();
@@ -70,7 +78,7 @@ public class BtrfsService {
 	}
 
 	private ProcessBuilder processBuilder(LinkedList<String> list) {
-		if (useSudo) {
+		if (useSudo()) {
 			list.addFirst("sudo");
 		}
 		return new ProcessBuilder().redirectError(Redirect.INHERIT)
@@ -133,16 +141,6 @@ public class BtrfsService {
 					"Error while receiving snapshot sub volume in " + sendFile,
 					e);
 		}
-	}
-
-	/**
-	 * Takes a read only snapsot of the source an puts it to the target
-	 * 
-	 * @deprecated Use {@link #takeSnapshot(Path,Path,boolean)} instead
-	 */
-	@Deprecated
-	public void takeSnapshot(Path sourceVolume, Path target) {
-		takeSnapshot(sourceVolume, target, true);
 	}
 
 	/**

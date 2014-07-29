@@ -29,7 +29,7 @@ public class TestBase {
 		Injector injector = Guice.createInjector(new GuiceModule());
 		Util.setInjector(injector);
 		Util.injectMembers(this);
-		btrfsService.useSudo = true;
+		btrfsService.setUseSudo(true);
 	}
 
 	protected Path createTempDirectory() throws IOException {

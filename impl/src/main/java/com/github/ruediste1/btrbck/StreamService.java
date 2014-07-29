@@ -54,6 +54,16 @@ public class StreamService {
 	}
 
 	public Stream readStream(StreamRepository repository, String name) {
+		Stream result = tryReadStream(repository, name);
+		if (result == null) {
+			throw new DisplayException("Cannot read stream " + name
+					+ " in repository "
+					+ repository.rootDirectory.toAbsolutePath());
+		}
+		return result;
+	}
+
+	public Stream tryReadStream(StreamRepository repository, String name) {
 		Stream s = new Stream();
 		s.name = name;
 		s.streamRepository = repository;
@@ -100,7 +110,7 @@ public class StreamService {
 		Lock lock = streamRepositoryService.getStreamEnumerationLock(
 				streamRepository, false);
 
-		if (readStream(streamRepository, name) != null) {
+		if (tryReadStream(streamRepository, name) != null) {
 			throw new DisplayException("Stream " + name + " already exists");
 		}
 
@@ -263,8 +273,8 @@ public class StreamService {
 		ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
 
 		btrfsService.deleteSubVolume(repo.getWorkingDirectory(stream));
-		VersionHistory history = stream.versionHistory;
-		history.addRestore(stream.id, snapshot.nr);
+		stream.versionHistory.addRestore(stream.id, snapshot.nr);
+		writeVersionHistory(stream);
 		btrfsService.takeSnapshot(snapshot.getSnapshotDir(),
 				repo.getWorkingDirectory(stream), false);
 	}

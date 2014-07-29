@@ -95,7 +95,7 @@ public class SnapshotTransferService {
 			boolean createStreamIfNecessary) {
 		try {
 			// load or create stream
-			Stream stream = streamService.readStream(repo, streamName);
+			Stream stream = streamService.tryReadStream(repo, streamName);
 			boolean isNew = false;
 			if (stream == null) {
 				// stream does not exist, create
@@ -117,7 +117,8 @@ public class SnapshotTransferService {
 			receiveMissingSnapshots(stream, isNew, input);
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
-
+		} catch (DisplayException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new RuntimeException("Error while receiving snapshots", e);
 
@@ -135,11 +136,6 @@ public class SnapshotTransferService {
 		try {
 			// read stream
 			Stream stream = streamService.readStream(repo, streamName);
-			if (stream == null) {
-				throw new DisplayException("Cannot send snapshots. Stream "
-						+ streamName + " does not exist in repository "
-						+ repo.rootDirectory.toAbsolutePath());
-			}
 
 			// send ready
 			Util.send(READY_INDICATOR, output);
@@ -188,6 +184,8 @@ public class SnapshotTransferService {
 			sendMissingSnapshots(stream, streamState, output);
 
 			process.close();
+		} catch (DisplayException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 
@@ -206,8 +204,8 @@ public class SnapshotTransferService {
 			RemoteRepository remoteRepo, String remoteStreamName,
 			boolean createStreamIfNecessary) {
 		try {
-			Stream stream = streamService
-					.readStream(localRepo, localStreamName);
+			Stream stream = streamService.tryReadStream(localRepo,
+					localStreamName);
 			boolean isNewStream = false;
 			if (stream == null) {
 				// the stream was not found, a new one must be created
@@ -259,6 +257,9 @@ public class SnapshotTransferService {
 			throw new DisplayException(
 					"the history of the target stream is not an ancestor of the source history");
 		}
+
+		stream.versionHistory = header.targetVersionHistory;
+		streamService.writeVersionHistory(stream);
 
 		for (int i = 0; i < header.count; i++) {
 			SendFile sendFile = Util.read(SendFile.class, input);

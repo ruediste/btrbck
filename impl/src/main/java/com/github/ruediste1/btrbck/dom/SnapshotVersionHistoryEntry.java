@@ -2,9 +2,19 @@ package com.github.ruediste1.btrbck.dom;
 
 import java.util.UUID;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement(name = "snapshot")
 public class SnapshotVersionHistoryEntry extends VersionHistoryEntry {
 	private static final long serialVersionUID = 1L;
-	int count = 1;
+
+	@XmlAttribute
+	public int count = 1;
+
+	public SnapshotVersionHistoryEntry() {
+
+	}
 
 	public SnapshotVersionHistoryEntry(UUID streamId) {
 		super(streamId);
@@ -25,5 +35,10 @@ public class SnapshotVersionHistoryEntry extends VersionHistoryEntry {
 		}
 		SnapshotVersionHistoryEntry other = (SnapshotVersionHistoryEntry) obj;
 		return count == other.count;
+	}
+
+	@Override
+	public String toString() {
+		return "(Snapshot: " + streamId + " count: " + count + ")";
 	}
 }

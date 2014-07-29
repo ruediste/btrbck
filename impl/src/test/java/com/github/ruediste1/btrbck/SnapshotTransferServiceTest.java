@@ -14,6 +14,7 @@ import java.io.PipedOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -30,7 +31,6 @@ import com.github.ruediste1.btrbck.dom.RemoteRepository;
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
-import com.github.ruediste1.btrbck.dom.VersionHistory;
 import com.github.ruediste1.btrbck.test.TestBase;
 
 public class SnapshotTransferServiceTest extends TestBase {
@@ -43,6 +43,9 @@ public class SnapshotTransferServiceTest extends TestBase {
 
 	@Inject
 	StreamService streamService;
+
+	@Inject
+	BtrfsService btrfsService;
 
 	ApplicationStreamRepository repo1;
 	BackupStreamRepository repo2;
@@ -101,11 +104,13 @@ public class SnapshotTransferServiceTest extends TestBase {
 			final PipedOutputStream returnedOutput = new PipedOutputStream(
 					threadInput);
 
+			final boolean sudoBtrfs = sudoRemoteBtrfs();
 			ExecutorService exec = Executors.newSingleThreadExecutor();
 			final Future<?> future = exec.submit(new Runnable() {
 
 				@Override
 				public void run() {
+					btrfsService.setUseSudo(sudoBtrfs);
 					try {
 
 						operation.run(remoteRepo, remoteStreamName,
@@ -134,7 +139,18 @@ public class SnapshotTransferServiceTest extends TestBase {
 				public void close() throws Exception {
 					// returnedOutput.flush();
 					// threadInput.close();
-					future.get();
+					try {
+						future.get();
+					} catch (ExecutionException e) {
+						try {
+							throw e.getCause();
+						} catch (DisplayException e1) {
+							throw e1;
+
+						} catch (Throwable e1) {
+							throw new RuntimeException(e1);
+						}
+					}
 				}
 			};
 		}
@@ -149,6 +165,7 @@ public class SnapshotTransferServiceTest extends TestBase {
 				BackupStreamRepository.class, createTempDirectory());
 
 		transferService.sshService = new SshServiceTestDouble(repo2);
+		transferService.sshService.setSudoRemoteBtrfs(true);
 	}
 
 	@After
@@ -181,7 +198,7 @@ public class SnapshotTransferServiceTest extends TestBase {
 	public void transferSnapshotCreateStream() throws Exception {
 		Stream stream = streamService.createStream(repo1, "test");
 		transferService.push(stream, null, "test2", true);
-		Stream targetStream = streamService.readStream(repo2, "test2");
+		Stream targetStream = streamService.tryReadStream(repo2, "test2");
 		assertThat(targetStream, not(nullValue()));
 	}
 
@@ -192,11 +209,9 @@ public class SnapshotTransferServiceTest extends TestBase {
 		streamService.takeSnapshot(stream);
 		transferService.push(stream, null, "test2", true);
 
-		// change UID, reset history, take 2nd snapshot. This leads to an
+		// change UID. This leads to an
 		// incompatible history
-		stream.id = UUID.randomUUID();
-		stream.versionHistory = new VersionHistory();
-		streamService.takeSnapshot(stream);
+		stream.versionHistory.getLastEntry().streamId = UUID.randomUUID();
 
 		// push should fail
 		transferService.push(stream, null, "test2", false);

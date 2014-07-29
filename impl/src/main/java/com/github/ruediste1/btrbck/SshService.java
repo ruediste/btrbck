@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -15,6 +15,25 @@ import com.github.ruediste1.btrbck.dom.SshTarget;
 
 @Singleton
 public class SshService {
+	private ThreadLocal<Boolean> sudoRemoteBtrbck = new ThreadLocal<>();
+
+	public void setSudoRemoteBtrbck(boolean value) {
+		sudoRemoteBtrbck.set(value);
+	}
+
+	protected boolean sudoRemoteBtrbck() {
+		return Boolean.TRUE.equals(sudoRemoteBtrbck.get());
+	}
+
+	private ThreadLocal<Boolean> sudoRemoteBtrfs = new ThreadLocal<>();
+
+	public void setSudoRemoteBtrfs(boolean value) {
+		sudoRemoteBtrfs.set(value);
+	}
+
+	protected boolean sudoRemoteBtrfs() {
+		return Boolean.TRUE.equals(sudoRemoteBtrfs.get());
+	}
 
 	private final class SshConnectionimpl implements SshConnection {
 		private final Process process;
@@ -46,10 +65,6 @@ public class SshService {
 		OutputStream getOutputStream();
 
 		void close() throws Exception;
-	}
-
-	private ProcessBuilder processBuilder(SshTarget target, String... commands) {
-		return processBuilder(target, Arrays.asList(commands));
 	}
 
 	private ProcessBuilder processBuilder(SshTarget target,
@@ -85,20 +100,39 @@ public class SshService {
 
 	public SshConnection sendSnapshots(RemoteRepository repo,
 			String remoteStreamName) throws IOException {
-		final Process process = processBuilder(repo.sshTarget, "btrbck",
-				"sendSnapshots", repo.location, remoteStreamName).start();
+		List<String> commands = new ArrayList<>();
+		if (sudoRemoteBtrbck()) {
+			commands.add("sudo");
+		}
+		commands.add("btrbck");
+		commands.add("-r");
+		commands.add(repo.location);
+		if (sudoRemoteBtrfs()) {
+			commands.add("-sudo");
+		}
+		commands.add(remoteStreamName);
+		final Process process = processBuilder(repo.sshTarget, commands)
+				.start();
 		return new SshConnectionimpl(process);
 	}
 
 	public SshConnection receiveSnapshots(RemoteRepository repo,
 			String remoteStreamName, boolean createRemoteIfNecessary)
 			throws IOException {
-		List<String> commands = Arrays.asList(new String[] { "btrbck",
-				"receiveSnapshots" });
+		List<String> commands = new ArrayList<>();
+		if (sudoRemoteBtrbck()) {
+			commands.add("sudo");
+		}
+		commands.add("btrbck");
 		if (createRemoteIfNecessary) {
 			commands.add("-c");
 		}
+		commands.add("-r");
 		commands.add(repo.location);
+		if (sudoRemoteBtrfs()) {
+			commands.add("-sudo");
+		}
+		commands.add("receiveSnapshots");
 		commands.add(remoteStreamName);
 		Process process = processBuilder(repo.sshTarget, commands).start();
 		return new SshConnectionimpl(process);

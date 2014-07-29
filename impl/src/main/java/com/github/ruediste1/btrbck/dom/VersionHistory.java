@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import javax.xml.bind.annotation.XmlElementRef;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.google.common.collect.Iterators;
@@ -28,6 +29,7 @@ public class VersionHistory implements Serializable {
 
 	}
 
+	@XmlElementRef
 	final ArrayList<VersionHistoryEntry> entries = new ArrayList<>();
 
 	public TreeMap<Integer, HistoryNode> calculateNodes() {
@@ -205,5 +207,10 @@ public class VersionHistory implements Serializable {
 		}
 		VersionHistory other = (VersionHistory) obj;
 		return entries.equals(other.entries);
+	}
+
+	@Override
+	public String toString() {
+		return "VersionHistory " + entries.toString();
 	}
 }

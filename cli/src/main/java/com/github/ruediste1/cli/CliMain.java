@@ -15,9 +15,11 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import com.github.ruediste1.btrbck.BtrfsService;
 import com.github.ruediste1.btrbck.DisplayException;
 import com.github.ruediste1.btrbck.GuiceModule;
 import com.github.ruediste1.btrbck.SnapshotTransferService;
+import com.github.ruediste1.btrbck.SshService;
 import com.github.ruediste1.btrbck.StreamRepositoryService;
 import com.github.ruediste1.btrbck.StreamService;
 import com.github.ruediste1.btrbck.Util;
@@ -42,6 +44,15 @@ public class CliMain {
 	@Option(name = "-a", usage = "if given, the initialize command creates an application stream repository")
 	boolean applicationRepository;
 
+	@Option(name = "-sudo", usage = "if given, use sudo to execute local btrfs commands")
+	boolean sudoLocalBtrfs;
+
+	@Option(name = "-sudoRemoteBtrbck", usage = "if given, use sudo to execute remote btrbck commands")
+	boolean sudoRemoteBtrbck;
+
+	@Option(name = "-sudoRemoteBtrfs", usage = "if given, use sudo to execute remote btrfs commands")
+	boolean sudoRemoteBtrfs;
+
 	@Option(name = "-i", usage = "the key file to be used by ssh")
 	File keyFile;
 
@@ -56,6 +67,11 @@ public class CliMain {
 
 	@Inject
 	SnapshotTransferService streamTransferService;
+
+	@Inject
+	BtrfsService btrfsService;
+	@Inject
+	SshService sshService;
 
 	public static void main(String... args) throws Exception {
 		new CliMain().doMain(args);
@@ -74,7 +90,7 @@ public class CliMain {
 		}
 	}
 
-	void processCommand(String[] args) throws IOException {
+	void processCommand(String... args) throws IOException {
 		parseCmdLine(args);
 
 		String command = arguments.get(0);
@@ -96,7 +112,31 @@ public class CliMain {
 			cmdDelete();
 		} else if ("restore".equals(command)) {
 			cmdRestore();
+		} else if ("receiveSnapshots".equals(command)) {
+			cmdReceiveSnapshots();
+		} else if ("sendSnapshots".equals(command)) {
+			cmdSendSnapshots();
+		} else {
+			throw new DisplayException("Unknown command " + command);
 		}
+	}
+
+	private void cmdSendSnapshots() {
+		if (arguments.size() != 2) {
+			throw new DisplayException("Usage: sendSnapshots <streamName>");
+		}
+		StreamRepository repo = readRepository();
+		streamTransferService.sendSnapshots(repo, arguments.get(1), System.in,
+				System.out);
+	}
+
+	private void cmdReceiveSnapshots() {
+		if (arguments.size() != 2) {
+			throw new DisplayException("Usage: receiveSnapshots <streamName>");
+		}
+		StreamRepository repo = readRepository();
+		streamTransferService.receiveSnapshots(repo, arguments.get(1),
+				System.in, System.out, createTargetStreams);
 	}
 
 	private void parseCmdLine(String[] args) {
@@ -134,6 +174,10 @@ public class CliMain {
 			System.exit(1);
 		}
 
+		// initialize sudoConfig
+		btrfsService.setUseSudo(sudoLocalBtrfs);
+		sshService.setSudoRemoteBtrbck(sudoRemoteBtrbck);
+		sshService.setSudoRemoteBtrfs(sudoRemoteBtrfs);
 	}
 
 	private void cmdPrune() {
@@ -287,7 +331,8 @@ public class CliMain {
 			}
 		} else if (arguments.size() == 2) {
 			StreamRepository repo = readRepository();
-			Stream stream = streamService.readStream(repo, arguments.get(1));
+			String streamName = arguments.get(1);
+			Stream stream = streamService.readStream(repo, streamName);
 			streamService.takeSnapshot(stream);
 		} else {
 			throw new DisplayException("too many arguments");
