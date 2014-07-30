@@ -9,7 +9,6 @@ import javax.inject.Singleton;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
-import com.github.ruediste1.btrbck.LockManager.Lock;
 import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
 import com.github.ruediste1.btrbck.dom.BackupStreamRepository;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
@@ -21,16 +20,7 @@ import com.github.ruediste1.btrbck.dom.StreamRepository;
 public class StreamRepositoryService {
 
 	@Inject
-	LockManager lockManager;
-
-	@Inject
 	JAXBContext ctx;
-
-	public Lock getStreamEnumerationLock(StreamRepository repository,
-			boolean shared) throws IOException {
-		return lockManager.getLock(repository.getStreamEnumerationLockFile(),
-				shared);
-	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends StreamRepository> T createRepository(Class<T> clazz,
@@ -50,7 +40,7 @@ public class StreamRepositoryService {
 		Files.createDirectories(repository.getBaseDirectory());
 
 		// create lock files
-		Util.initializeLockFile(repository.getStreamEnumerationLockFile());
+		Util.initializeLockFile(repository.getRepositoryLockFile());
 
 		// create repository.xml
 		try {

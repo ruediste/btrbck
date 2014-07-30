@@ -39,14 +39,6 @@ public class Stream {
 		return getStreamMetaDirectory().resolve(name + ".id");
 	}
 
-	public Path getSnapshotRemovalLockFile() {
-		return getStreamMetaDirectory().resolve("snapshotRemovalLock");
-	}
-
-	public Path getSnapshotCreationLockFile() {
-		return getStreamMetaDirectory().resolve("snapshotCreationLock");
-	}
-
 	public Path getStreamMetaDirectory() {
 		return streamRepository.getBaseDirectory().resolve(name);
 	}

@@ -57,8 +57,6 @@ public class StreamServiceTest extends TestBase {
 		assertNotNull(stream.id);
 		assertNotNull(stream.initialRetentionPeriod);
 		assertNotNull(stream.versionHistory);
-		assertTrue(Files.exists(stream.getSnapshotCreationLockFile()));
-		assertTrue(Files.exists(stream.getSnapshotRemovalLockFile()));
 		assertTrue(Files.exists(stream.getStreamConfigFile()));
 		assertTrue(Files.exists(stream.getSnapshotsDir()));
 		assertTrue(Files.exists(stream.getReceiveTempDir()));

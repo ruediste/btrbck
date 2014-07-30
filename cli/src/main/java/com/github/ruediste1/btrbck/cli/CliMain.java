@@ -2,8 +2,11 @@ package com.github.ruediste1.btrbck.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -85,8 +88,11 @@ public class CliMain {
 
 	@Inject
 	BtrfsService btrfsService;
+
 	@Inject
 	SshService sshService;
+
+	private FileLock repositoryLock;
 
 	public static void main(String... args) throws Exception {
 		new CliMain().doMain(args);
@@ -110,36 +116,42 @@ public class CliMain {
 	}
 
 	void processCommand(String... args) throws IOException {
-		parseCmdLine(args);
+		try {
+			parseCmdLine(args);
 
-		log.debug("args: " + Arrays.toString(args));
-		log.debug("Arguments: " + arguments);
+			log.debug("args: " + Arrays.toString(args));
+			log.debug("Arguments: " + arguments);
 
-		String command = arguments.get(0);
-		if ("snapshot".equals(command)) {
-			cmdSnapshot();
-		} else if ("list".equals(command)) {
-			cmdList();
-		} else if ("push".equals(command)) {
-			cmdPush();
-		} else if ("pull".equals(command)) {
-			cmdPull();
-		} else if ("process".equals(command)) {
-			cmdProcess();
-		} else if ("prune".equals(command)) {
-			cmdPrune();
-		} else if ("create".equals(command)) {
-			cmdCreate();
-		} else if ("delete".equals(command)) {
-			cmdDelete();
-		} else if ("restore".equals(command)) {
-			cmdRestore();
-		} else if ("receiveSnapshots".equals(command)) {
-			cmdReceiveSnapshots();
-		} else if ("sendSnapshots".equals(command)) {
-			cmdSendSnapshots();
-		} else {
-			throw new DisplayException("Unknown command " + command);
+			String command = arguments.get(0);
+			if ("snapshot".equals(command)) {
+				cmdSnapshot();
+			} else if ("list".equals(command)) {
+				cmdList();
+			} else if ("push".equals(command)) {
+				cmdPush();
+			} else if ("pull".equals(command)) {
+				cmdPull();
+			} else if ("process".equals(command)) {
+				cmdProcess();
+			} else if ("prune".equals(command)) {
+				cmdPrune();
+			} else if ("create".equals(command)) {
+				cmdCreate();
+			} else if ("delete".equals(command)) {
+				cmdDelete();
+			} else if ("restore".equals(command)) {
+				cmdRestore();
+			} else if ("receiveSnapshots".equals(command)) {
+				cmdReceiveSnapshots();
+			} else if ("sendSnapshots".equals(command)) {
+				cmdSendSnapshots();
+			} else {
+				throw new DisplayException("Unknown command " + command);
+			}
+		} finally {
+			if (repositoryLock != null) {
+				repositoryLock.release();
+			}
 		}
 	}
 
@@ -147,7 +159,7 @@ public class CliMain {
 		if (arguments.size() != 2) {
 			throw new DisplayException("Usage: sendSnapshots <streamName>");
 		}
-		StreamRepository repo = readRepository();
+		StreamRepository repo = readAndLockRepository();
 		streamTransferService.sendSnapshots(repo, arguments.get(1), System.in,
 				System.out);
 	}
@@ -156,7 +168,7 @@ public class CliMain {
 		if (arguments.size() != 2) {
 			throw new DisplayException("Usage: receiveSnapshots <streamName>");
 		}
-		StreamRepository repo = readRepository();
+		StreamRepository repo = readAndLockRepository();
 		streamTransferService.receiveSnapshots(repo, arguments.get(1),
 				System.in, System.out, createTargetStreams);
 	}
@@ -241,7 +253,7 @@ public class CliMain {
 		remoteRepo.location = arguments.get(3);
 		remoteRepo.sshTarget = sshTarget;
 
-		StreamRepository repo = readRepository();
+		StreamRepository repo = readAndLockRepository();
 		Stream stream = streamService.readStream(repo, streamName);
 
 		streamTransferService.push(stream, remoteRepo, remoteStreamName,
@@ -272,7 +284,7 @@ public class CliMain {
 		remoteRepo.location = remoteRepoPath;
 		remoteRepo.sshTarget = sshTarget;
 
-		StreamRepository repo = readRepository();
+		StreamRepository repo = readAndLockRepository();
 
 		streamTransferService.pull(repo, streamName, remoteRepo,
 				remoteStreamName, createTargetStreams);
@@ -282,14 +294,14 @@ public class CliMain {
 	private void cmdList() {
 		if (arguments.size() == 1) {
 			// list streams in repository
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			System.out.println("Streams in repository "
 					+ repo.rootDirectory.toAbsolutePath() + ":");
 			for (String name : streamService.getStreamNames(repo)) {
 				System.out.println(name);
 			}
 		} else if (arguments.size() == 2) {
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			Stream stream = streamService.readStream(repo, arguments.get(1));
 			TreeMap<Integer, Snapshot> snapshots = streamService
 					.getSnapshots(stream);
@@ -329,7 +341,7 @@ public class CliMain {
 		} else if (arguments.size() == 2) {
 			// create stream
 			String streamName = arguments.get(1);
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			streamService.createStream(repo, streamName);
 		} else {
 			throw new DisplayException("too many arguments");
@@ -338,12 +350,12 @@ public class CliMain {
 
 	private void cmdDelete() {
 		if (arguments.size() == 1) {
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			// delete repository
 			streamService.deleteStreams(repo);
 			streamRepositoryService.deleteEmptyRepository(repo);
 		} else if (arguments.size() == 2) {
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			streamService.deleteStream(repo, arguments.get(1));
 		} else {
 			throw new DisplayException("too many arguments");
@@ -353,13 +365,13 @@ public class CliMain {
 
 	private void cmdSnapshot() {
 		if (arguments.size() == 1) {
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			for (String name : streamService.getStreamNames(repo)) {
 				Stream stream = streamService.readStream(repo, name);
 				streamService.takeSnapshot(stream);
 			}
 		} else if (arguments.size() == 2) {
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			String streamName = arguments.get(1);
 			Stream stream = streamService.readStream(repo, streamName);
 			streamService.takeSnapshot(stream);
@@ -371,19 +383,19 @@ public class CliMain {
 	private void cmdRestore() {
 		if (arguments.size() == 1) {
 			// restore the latest snapshot of all streams
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			for (String name : streamService.getStreamNames(repo)) {
 				Stream stream = streamService.readStream(repo, name);
 				streamService.restoreLatestSnapshot(stream);
 			}
 		} else if (arguments.size() == 2) {
 			// restore the latest snapshot of a single stream
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			Stream stream = streamService.readStream(repo, arguments.get(1));
 			streamService.restoreLatestSnapshot(stream);
 		} else if (arguments.size() == 3) {
 			// restore a specific snapshot of a single stream
-			StreamRepository repo = readRepository();
+			StreamRepository repo = readAndLockRepository();
 			Stream stream = streamService.readStream(repo, arguments.get(1));
 			int snapshotNr = Integer.parseInt(arguments.get(2));
 			streamService.restoreSnapshot(stream, snapshotNr);
@@ -393,11 +405,21 @@ public class CliMain {
 
 	}
 
-	private StreamRepository readRepository() {
+	private StreamRepository readAndLockRepository() {
 		File path = repositoryLocation;
 		if (path == null) {
 			path = Paths.get("").toFile();
 		}
-		return streamRepositoryService.readRepository(path.toPath());
+		StreamRepository repo = streamRepositoryService.readRepository(path
+				.toPath());
+		FileChannel f;
+		try {
+			f = FileChannel.open(repo.getRepositoryLockFile(),
+					StandardOpenOption.WRITE);
+			repositoryLock = f.lock(0L, Long.MAX_VALUE, false);
+		} catch (IOException e) {
+			throw new RuntimeException("Error while locking repository", e);
+		}
+		return repo;
 	}
 }

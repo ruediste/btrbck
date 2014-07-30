@@ -19,7 +19,6 @@ import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.ruediste1.btrbck.LockManager.Lock;
 import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.Stream;
@@ -42,21 +41,7 @@ public class StreamService {
 	StreamRepositoryService streamRepositoryService;
 
 	@Inject
-	LockManager lockManager;
-
-	@Inject
 	JAXBContext ctx;
-
-	public Lock getSnapshotRemovalLock(Stream stream, boolean shared)
-			throws IOException {
-		return lockManager.getLock(stream.getSnapshotRemovalLockFile(), shared);
-	}
-
-	public Lock getSnapshotCreationLock(Stream stream, boolean shared)
-			throws IOException {
-		return lockManager
-				.getLock(stream.getSnapshotCreationLockFile(), shared);
-	}
 
 	public Stream readStream(StreamRepository repository, String name) {
 		Stream result = tryReadStream(repository, name);
@@ -115,8 +100,6 @@ public class StreamService {
 
 	public Stream createStream(StreamRepository streamRepository, String name)
 			throws IOException {
-		Lock lock = streamRepositoryService.getStreamEnumerationLock(
-				streamRepository, false);
 
 		if (tryReadStream(streamRepository, name) != null) {
 			throw new DisplayException("Stream " + name + " already exists");
@@ -127,8 +110,6 @@ public class StreamService {
 		stream.name = name;
 
 		Files.createDirectory(stream.getStreamMetaDirectory());
-		Util.initializeLockFile(stream.getSnapshotCreationLockFile());
-		Util.initializeLockFile(stream.getSnapshotRemovalLockFile());
 		Files.createDirectory(stream.getSnapshotsDir());
 		Files.createDirectory(stream.getReceiveTempDir());
 
@@ -156,7 +137,6 @@ public class StreamService {
 		stream.versionHistory = new VersionHistory();
 		writeVersionHistory(stream);
 
-		lock.release();
 		return stream;
 	}
 

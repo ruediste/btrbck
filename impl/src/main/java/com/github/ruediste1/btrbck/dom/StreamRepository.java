@@ -26,9 +26,8 @@ public abstract class StreamRepository {
 		return getBaseDirectory().resolve(stream.name);
 	}
 
-	public Path getStreamEnumerationLockFile() {
-
-		return getBaseDirectory().resolve(".streamEnumerationLock");
+	public Path getRepositoryLockFile() {
+		return getBaseDirectory().resolve("repositoryLock");
 	}
 
 	public Path getRepositoryXmlFile() {
