@@ -1,4 +1,4 @@
-package com.github.ruediste1.cli;
+package com.github.ruediste1.btrbck.cli;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;

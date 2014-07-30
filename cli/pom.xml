@@ -36,7 +36,7 @@
 					<transformers>
 						<transformer
 							implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-							<mainClass>com.github.ruediste1.cli.CliMain</mainClass>
+							<mainClass>com.github.ruediste1.btrbck.cli.CliMain</mainClass>
 						</transformer>
 					</transformers>
 				</configuration>
@@ -91,5 +91,11 @@
 			<artifactId>btrbck-impl</artifactId>
 			<version>1.0-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.7</version>
+		</dependency>
+		
 	</dependencies>
 </project>

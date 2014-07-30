@@ -11,6 +11,9 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.ruediste1.btrbck.SshService.SshConnection;
 import com.github.ruediste1.btrbck.SyncService.SendFileSpec;
 import com.github.ruediste1.btrbck.dom.RemoteRepository;
@@ -66,6 +69,8 @@ import com.github.ruediste1.btrbck.dto.StreamState;
 public class SnapshotTransferService {
 	public static final String READY_INDICATOR = "BtrBck READY";
 	public static final String START_COMMAND = "BtrBck START";
+
+	Logger log = LoggerFactory.getLogger(SnapshotTransferService.class);
 
 	@Inject
 	SshService sshService;
@@ -280,16 +285,25 @@ public class SnapshotTransferService {
 			// move to final destination
 			Path tmpSnapshot = stream.getReceiveTempDir().resolve(
 					sendFile.snapshotName);
+
 			btrfsService.takeSnapshot(tmpSnapshot, stream.getSnapshotsDir(),
 					true);
+
 			btrfsService.deleteSubVolume(tmpSnapshot);
 		}
 	}
 
 	void sendMissingSnapshots(Stream stream, StreamState streamState,
 			final OutputStream output) throws IOException {
+
+		log.debug("sending missing snapshots of stream " + stream);
+		log.debug("version history " + stream.versionHistory);
+		log.debug("target stream state: " + streamState);
+		// determine snapshots to be sent
 		List<SendFileSpec> sendFiles = syncService.determineSendFiles(stream,
 				streamState);
+
+		// send the list header
 		{
 			SendFileListHeader header = new SendFileListHeader();
 			header.count = sendFiles.size();
@@ -301,12 +315,17 @@ public class SnapshotTransferService {
 			}
 			Util.send(header, output);
 		}
+
+		// send the snapshots
 		for (SendFileSpec sendFile : sendFiles) {
+			// send the file header
 			{
 				SendFile s = new SendFile();
 				s.snapshotName = sendFile.target.getSnapshotName();
 				Util.send(s, output);
 			}
+
+			// send the stream itself
 			btrfsService.send(sendFile, new Consumer<InputStream>() {
 
 				@Override

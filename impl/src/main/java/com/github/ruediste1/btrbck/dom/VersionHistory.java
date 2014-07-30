@@ -27,6 +27,11 @@ public class VersionHistory implements Serializable {
 			return Integer.compare(snapshotNr, o.snapshotNr);
 		}
 
+		@Override
+		public String toString() {
+			return "(Node " + snapshotNr + "parents: " + parentNrs + ")";
+		}
+
 	}
 
 	@XmlElementRef

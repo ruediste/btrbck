@@ -1,5 +1,6 @@
 package com.github.ruediste1.btrbck;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +16,8 @@ import javax.xml.bind.JAXBException;
 
 import org.joda.time.DateTime;
 import org.joda.time.Period;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.ruediste1.btrbck.LockManager.Lock;
 import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
@@ -29,6 +32,8 @@ import com.github.ruediste1.btrbck.dom.VersionHistory;
  */
 @Singleton
 public class StreamService {
+
+	Logger log = LoggerFactory.getLogger(StreamService.class);
 
 	@Inject
 	BtrfsService btrfsService;
@@ -95,13 +100,16 @@ public class StreamService {
 		}
 		// read version history
 		try {
+			File historyFile = s.getVersionHistoryFile().toFile();
+			log.debug("reading version history from " + historyFile);
 			readStream.versionHistory = (VersionHistory) ctx
-					.createUnmarshaller().unmarshal(
-							s.getVersionHistoryFile().toFile());
+					.createUnmarshaller().unmarshal(historyFile);
 		} catch (JAXBException e) {
 			throw new RuntimeException("Error while reading version history", e);
 		}
 
+		log.debug("read stream " + readStream + ", versionHistory: "
+				+ readStream.versionHistory);
 		return readStream;
 	}
 
@@ -184,6 +192,8 @@ public class StreamService {
 		for (Snapshot snapshot : getSnapshots(stream).values()) {
 			deleteSnapshot(snapshot);
 		}
+
+		clearReceiveTempDir(stream);
 
 		Util.removeRecursive(stream.getStreamMetaDirectory());
 	}

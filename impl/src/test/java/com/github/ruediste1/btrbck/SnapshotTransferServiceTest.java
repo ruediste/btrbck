@@ -24,6 +24,7 @@ import javax.inject.Inject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.MDC;
 
 import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
 import com.github.ruediste1.btrbck.dom.BackupStreamRepository;
@@ -111,6 +112,7 @@ public class SnapshotTransferServiceTest extends TestBase {
 				@Override
 				public void run() {
 					btrfsService.setUseSudo(sudoBtrfs);
+					MDC.put("id", "2");
 					try {
 
 						operation.run(remoteRepo, remoteStreamName,

@@ -10,6 +10,8 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import org.joda.time.Period;
 
+import com.google.common.base.Objects;
+
 @XmlRootElement
 public class Stream {
 
@@ -59,6 +61,13 @@ public class Stream {
 
 	public Path getVersionHistoryFile() {
 		return getStreamMetaDirectory().resolve("versions.xml");
+	}
+
+	@Override
+	public String toString() {
+		return Objects.toStringHelper(this).add("id", id).add("name", name)
+				.add("repo", streamRepository.rootDirectory.toAbsolutePath())
+				.toString();
 	}
 
 }

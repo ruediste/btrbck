@@ -173,11 +173,13 @@
 			<artifactId>guice</artifactId>
 			<version>3.0</version>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.reflections</groupId>
 			<artifactId>reflections</artifactId>
 			<version>0.9.8</version>
-		</dependency>
+		</dependency> -->
+
+		
 
 	</dependencies>
 </project>

@@ -71,6 +71,19 @@ public class VersionHistoryTest {
 	}
 
 	@Test
+	public void testCalculateNodesSimple() throws Exception {
+		VersionHistory history = new VersionHistory();
+		UUID id = UUID.randomUUID();
+
+		history.addVersion(id);
+		history.addVersion(id);
+		history.addVersion(id);
+
+		TreeMap<Integer, HistoryNode> nodes = history.calculateNodes();
+		assertThat(nodes.entrySet(), hasSize(3));
+	}
+
+	@Test
 	public void testCalculateNodes() throws Exception {
 		VersionHistory history = new VersionHistory();
 		UUID id = UUID.randomUUID();

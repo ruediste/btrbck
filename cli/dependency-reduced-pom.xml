@@ -32,7 +32,7 @@
           <minimizeJar>false</minimizeJar>
           <transformers>
             <transformer>
-              <mainClass>com.github.ruediste1.cli.CliMain</mainClass>
+              <mainClass>com.github.ruediste1.btrbck.cli.CliMain</mainClass>
             </transformer>
           </transformers>
         </configuration>

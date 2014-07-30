@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import javax.inject.Inject;
 
 import org.junit.Before;
+import org.slf4j.MDC;
 
 import com.github.ruediste1.btrbck.BtrfsService;
 import com.github.ruediste1.btrbck.GuiceModule;
@@ -30,6 +31,7 @@ public class CliTestBase {
 		Util.setInjector(injector);
 		Util.injectMembers(this);
 		btrfsService.setUseSudo(true);
+		MDC.put("id", "1");
 	}
 
 	protected Path createTempDirectory() throws IOException {

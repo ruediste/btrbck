@@ -1,19 +1,25 @@
-package com.github.ruediste1.cli;
+package com.github.ruediste1.btrbck.cli;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.TreeMap;
 
 import javax.inject.Inject;
 
+import org.apache.log4j.Level;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.github.ruediste1.btrbck.BtrfsService;
 import com.github.ruediste1.btrbck.DisplayException;
@@ -30,11 +36,14 @@ import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.SshTarget;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 public class CliMain {
+	Logger log = LoggerFactory.getLogger(CliMain.class);
+
 	@Option(name = "-r", usage = "the location of the stream repository to use")
 	File repositoryLocation;
 
@@ -55,6 +64,9 @@ public class CliMain {
 
 	@Option(name = "-i", usage = "the key file to be used by ssh")
 	File keyFile;
+
+	@Option(name = "-v", usage = "show verbose output")
+	boolean verbose;
 
 	@Argument(hidden = true)
 	List<String> arguments = new ArrayList<>();
@@ -78,6 +90,10 @@ public class CliMain {
 	}
 
 	private void doMain(String[] args) throws Exception {
+		byte[] buf = new byte[4];
+		new Random().nextBytes(buf);
+		MDC.put("id", BaseEncoding.base16().encode(buf));
+
 		Injector injector = Guice.createInjector(new GuiceModule());
 		Util.setInjector(injector);
 		Util.injectMembers(this);
@@ -92,6 +108,9 @@ public class CliMain {
 
 	void processCommand(String... args) throws IOException {
 		parseCmdLine(args);
+
+		log.debug("args: " + Arrays.toString(args));
+		log.debug("Arguments: " + arguments);
 
 		String command = arguments.get(0);
 		if ("snapshot".equals(command)) {
@@ -178,6 +197,12 @@ public class CliMain {
 		btrfsService.setUseSudo(sudoLocalBtrfs);
 		sshService.setSudoRemoteBtrbck(sudoRemoteBtrbck);
 		sshService.setSudoRemoteBtrfs(sudoRemoteBtrfs);
+
+		// configure loglevel
+		if (verbose) {
+			org.apache.log4j.Logger.getRootLogger().setLevel(Level.DEBUG);
+			sshService.setVerboseRemote(verbose);
+		}
 	}
 
 	private void cmdPrune() {

@@ -12,6 +12,9 @@ import java.util.TreeSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.VersionHistory;
@@ -20,6 +23,8 @@ import com.github.ruediste1.btrbck.dto.StreamState;
 
 @Singleton
 public class SyncService {
+
+	Logger log = LoggerFactory.getLogger(SyncService.class);
 
 	@Inject
 	StreamService streamService;
@@ -116,6 +121,7 @@ public class SyncService {
 			TreeSet<Integer> availableCloneSources) {
 		Set<Integer> result = new HashSet<>();
 		TreeMap<Integer, HistoryNode> nodes = versionHistory.calculateNodes();
+		log.debug("Node Map: " + nodes);
 		HistoryNode node = nodes.get(snapshot.nr);
 
 		fillAvailableAncestors(node, result, availableCloneSources);

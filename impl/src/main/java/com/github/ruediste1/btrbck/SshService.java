@@ -35,6 +35,16 @@ public class SshService {
 		return Boolean.TRUE.equals(sudoRemoteBtrfs.get());
 	}
 
+	private ThreadLocal<Boolean> verboseRemote = new ThreadLocal<>();
+
+	public void setVerboseRemote(boolean value) {
+		verboseRemote.set(value);
+	}
+
+	protected boolean verboseRemote() {
+		return Boolean.TRUE.equals(verboseRemote.get());
+	}
+
 	private final class SshConnectionimpl implements SshConnection {
 		private final Process process;
 
@@ -110,6 +120,11 @@ public class SshService {
 		if (sudoRemoteBtrfs()) {
 			commands.add("-sudo");
 		}
+		if (verboseRemote()) {
+			commands.add("-v");
+		}
+
+		commands.add("sendSnapshots");
 		commands.add(remoteStreamName);
 		final Process process = processBuilder(repo.sshTarget, commands)
 				.start();
@@ -131,6 +146,9 @@ public class SshService {
 		commands.add(repo.location);
 		if (sudoRemoteBtrfs()) {
 			commands.add("-sudo");
+		}
+		if (verboseRemote()) {
+			commands.add("-v");
 		}
 		commands.add("receiveSnapshots");
 		commands.add(remoteStreamName);

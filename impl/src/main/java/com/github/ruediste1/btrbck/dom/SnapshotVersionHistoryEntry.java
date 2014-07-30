@@ -5,6 +5,8 @@ import java.util.UUID;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.google.common.base.Objects;
+
 @XmlRootElement(name = "snapshot")
 public class SnapshotVersionHistoryEntry extends VersionHistoryEntry {
 	private static final long serialVersionUID = 1L;
@@ -34,7 +36,12 @@ public class SnapshotVersionHistoryEntry extends VersionHistoryEntry {
 			return false;
 		}
 		SnapshotVersionHistoryEntry other = (SnapshotVersionHistoryEntry) obj;
-		return count == other.count;
+		return streamId.equals(other.streamId) && count == other.count;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(streamId, count);
 	}
 
 	@Override

@@ -10,6 +10,9 @@ import java.util.LinkedList;
 
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.ruediste1.btrbck.SyncService.SendFileSpec;
 import com.github.ruediste1.btrbck.dom.Snapshot;
 
@@ -18,6 +21,7 @@ import com.github.ruediste1.btrbck.dom.Snapshot;
  */
 @Singleton
 public class BtrfsService {
+	Logger log = LoggerFactory.getLogger(BtrfsService.class);
 
 	private ThreadLocal<Boolean> useSudo = new ThreadLocal<>();
 
@@ -81,6 +85,7 @@ public class BtrfsService {
 		if (useSudo()) {
 			list.addFirst("sudo");
 		}
+		log.debug("created process builder: " + list);
 		return new ProcessBuilder().redirectError(Redirect.INHERIT)
 				.redirectOutput(Redirect.INHERIT).command(list);
 	}
@@ -88,11 +93,23 @@ public class BtrfsService {
 	public void deleteSubVolume(Path subVolumeDir) {
 		String path = subVolumeDir.toAbsolutePath().toString();
 		try {
-			int exitValue;
-			exitValue = processBuilder("btrfs", "subvolume", "delete", path)
-					.start().waitFor();
-			if (exitValue != 0) {
-				throw new IOException("exit code: " + exitValue);
+			int retries = 0;
+			while (true) {
+				int exitValue = processBuilder("btrfs", "subvolume", "delete",
+						path).start().waitFor();
+				if (exitValue != 0) {
+					log.debug("Delete: Exit code was " + exitValue);
+				}
+				if (exitValue != 1) {
+					// quit retry loop if everything went well
+					break;
+				} else if (retries > 3) {
+					// there was an error and no more retries, throw exception
+					throw new IOException("exit code: " + exitValue);
+				}
+
+				retries++;
+				Thread.sleep(retries * 100);
 			}
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Error while deleting sub volume in "
@@ -144,7 +161,7 @@ public class BtrfsService {
 	}
 
 	/**
-	 * Takes a read only snapsot of the source an puts it to the target
+	 * Takes a read only snapshot of the source an puts it to the target
 	 * 
 	 * @param readonly
 	 *            TODO
@@ -162,6 +179,9 @@ public class BtrfsService {
 
 				int exitValue = processBuilder(list).start().waitFor();
 				if (exitValue != 0) {
+					log.debug("TakeSnapshot: Exit code was " + exitValue);
+				}
+				if (exitValue == 1) {
 					throw new IOException("exit code: " + exitValue);
 				}
 			}
