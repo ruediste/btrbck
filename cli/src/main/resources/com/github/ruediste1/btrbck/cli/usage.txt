@@ -51,3 +51,8 @@ btrbck restore <stream>
   
 btrbck restore <stream> <snapshot number>
   Restore a snapshot of a stream
+  
+btrbck lock
+  Lock the repository. The program will wait for enter and then
+  unlock the repository again. Useful to lock a repository while
+  changing it's configuration.

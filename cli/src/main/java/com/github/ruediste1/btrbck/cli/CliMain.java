@@ -1,5 +1,6 @@
 package com.github.ruediste1.btrbck.cli;
 
+import java.io.Console;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -145,6 +146,8 @@ public class CliMain {
 				cmdReceiveSnapshots();
 			} else if ("sendSnapshots".equals(command)) {
 				cmdSendSnapshots();
+			} else if ("lock".equals(command)) {
+				cmdLock();
 			} else {
 				throw new DisplayException("Unknown command " + command);
 			}
@@ -152,6 +155,16 @@ public class CliMain {
 			if (repositoryLock != null) {
 				repositoryLock.release();
 			}
+		}
+	}
+
+	private void cmdLock() {
+		readAndLockRepository();
+		Console console = System.console();
+		if (console != null) {
+			console.printf("Repository locked. Press enter to unlock.\n");
+			console.readLine();
+			console.printf("Repository unlocked.\n");
 		}
 	}
 
