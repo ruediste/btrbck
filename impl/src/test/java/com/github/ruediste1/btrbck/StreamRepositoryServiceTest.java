@@ -35,7 +35,7 @@ public class StreamRepositoryServiceTest extends TestBase {
 	public void tearDown() {
 
 		if (repoPath != null) {
-			Util.removeRecursive(repoPath);
+			Util.removeRecursive(repoPath, true);
 			repoPath = null;
 		}
 	}

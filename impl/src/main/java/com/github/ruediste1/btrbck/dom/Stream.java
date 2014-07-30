@@ -31,6 +31,10 @@ public class Stream {
 	@XmlTransient
 	public VersionHistory versionHistory;
 
+	@XmlAttribute
+	@XmlJavaTypeAdapter(PeriodAdapter.class)
+	public Period snapshotInterval;
+
 	public Path getStreamConfigFile() {
 		return getStreamMetaDirectory().resolve(name + ".xml");
 	}

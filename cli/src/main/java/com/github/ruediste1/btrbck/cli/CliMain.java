@@ -17,6 +17,7 @@ import java.util.TreeMap;
 import javax.inject.Inject;
 
 import org.apache.log4j.Level;
+import org.joda.time.Instant;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -240,7 +241,13 @@ public class CliMain {
 	}
 
 	private void cmdProcess() {
-		// TODO Auto-generated method stub
+		Instant now = Instant.now();
+		StreamRepository repo = readAndLockRepository();
+		for (String name : streamService.getStreamNames(repo)) {
+			Stream stream = streamService.readStream(repo, name);
+			streamService.takeSnapshotIfRequired(stream, now);
+			streamService.pruneSnapshots(stream);
+		}
 
 	}
 

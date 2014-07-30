@@ -61,6 +61,7 @@ public class CliMainTest extends CliTestBase {
 						.readRepository(p);
 				streamService.deleteStreams(repo);
 				streamRepositoryService.deleteEmptyRepository(repo);
+				Files.delete(p);
 			} catch (Throwable t) {
 				System.err.println("Error while removing repository: " + t);
 			}

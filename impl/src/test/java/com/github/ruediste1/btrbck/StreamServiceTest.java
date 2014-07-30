@@ -45,9 +45,10 @@ public class StreamServiceTest extends TestBase {
 	}
 
 	@After
-	public void tearDown() {
+	public void tearDown() throws IOException {
 		service.deleteStreams(repository);
 		repositoryService.deleteEmptyRepository(repository);
+		Files.delete(repository.rootDirectory);
 	}
 
 	@Test
@@ -173,4 +174,5 @@ public class StreamServiceTest extends TestBase {
 		assertThat(((RestoreVersionHistoryEntry) lastEntry).restoredSnapshotNr,
 				is(snapshot.nr));
 	}
+
 }

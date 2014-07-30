@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeMap;
@@ -15,6 +16,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
 import org.joda.time.DateTime;
+import org.joda.time.Instant;
 import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,7 +177,7 @@ public class StreamService {
 
 		clearReceiveTempDir(stream);
 
-		Util.removeRecursive(stream.getStreamMetaDirectory());
+		Util.removeRecursive(stream.getStreamMetaDirectory(), true);
 	}
 
 	public void deleteStreams(StreamRepository repository) {
@@ -280,4 +282,41 @@ public class StreamService {
 		}
 	}
 
+	/**
+	 * Determine if a new snapshot is required, given the current time
+	 */
+	public void takeSnapshotIfRequired(Stream stream, Instant now) {
+		if (isSnapshotRequired(now, stream.snapshotInterval,
+				getSnapshots(stream).values())) {
+			takeSnapshot(stream);
+		}
+	}
+
+	boolean isSnapshotRequired(Instant now, Period snapshotInterval,
+			Collection<Snapshot> snapshots) {
+		if (snapshotInterval == null) {
+			return false;
+		}
+		DateTime latest = null;
+		for (Snapshot s : snapshots) {
+			if (latest == null || latest.isBefore(s.date)) {
+				latest = s.date;
+			}
+		}
+
+		log.debug("Latest snapshot date: " + latest + " interval: "
+				+ snapshotInterval + " now: " + now);
+
+		boolean snapshotRequired = true;
+		if (latest != null) {
+			if (latest.plus(snapshotInterval).isAfter(now)) {
+				snapshotRequired = false;
+			}
+		}
+		return snapshotRequired;
+	}
+
+	public void pruneSnapshots(Stream stream) {
+
+	}
 }

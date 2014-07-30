@@ -171,11 +171,13 @@ public class SnapshotTransferServiceTest extends TestBase {
 	}
 
 	@After
-	public void tearDown() {
+	public void tearDown() throws IOException {
 		streamService.deleteStreams(repo1);
 		repositoryService.deleteEmptyRepository(repo1);
+		Files.delete(repo1.rootDirectory);
 		streamService.deleteStreams(repo2);
 		repositoryService.deleteEmptyRepository(repo2);
+		Files.delete(repo2.rootDirectory);
 	}
 
 	@Test

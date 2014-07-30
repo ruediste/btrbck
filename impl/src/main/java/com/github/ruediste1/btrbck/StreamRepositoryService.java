@@ -60,7 +60,7 @@ public class StreamRepositoryService {
 	 * Delete this empty repository
 	 */
 	public void deleteEmptyRepository(StreamRepository repository) {
-		Util.removeRecursive(repository.rootDirectory);
+		Util.removeRecursive(repository.rootDirectory, false);
 	}
 
 	public StreamRepository readRepository(Path rootDir) {

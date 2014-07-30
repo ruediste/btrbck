@@ -42,7 +42,15 @@ public class Util {
 		injector.injectMembers(obj);
 	}
 
+	/**
+	 * @deprecated Use {@link #removeRecursive(Path,boolean)} instead
+	 */
+	@Deprecated
 	public static void removeRecursive(Path path) {
+		removeRecursive(path, true);
+	}
+
+	public static void removeRecursive(final Path path, final boolean deleteRoot) {
 		try {
 			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
 				@Override
@@ -66,7 +74,9 @@ public class Util {
 				public FileVisitResult postVisitDirectory(Path dir,
 						IOException exc) throws IOException {
 					if (exc == null) {
-						Files.delete(dir);
+						if (deleteRoot || !path.equals(dir)) {
+							Files.delete(dir);
+						}
 						return FileVisitResult.CONTINUE;
 					} else {
 						// directory iteration failed; propagate exception
