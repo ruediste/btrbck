@@ -56,6 +56,9 @@ public class CliMain {
 	@Option(name = "-sudo", usage = "if given, use sudo to execute local btrfs commands")
 	boolean sudoLocalBtrfs;
 
+	@Option(name = "-strace", usage = "if given, use strace for certain commands. The output will be logged to strace.XXX.log files")
+	boolean useStrace;
+
 	@Option(name = "-sudoRemoteBtrbck", usage = "if given, use sudo to execute remote btrbck commands")
 	boolean sudoRemoteBtrbck;
 
@@ -195,6 +198,7 @@ public class CliMain {
 
 		// initialize sudoConfig
 		btrfsService.setUseSudo(sudoLocalBtrfs);
+		btrfsService.setUseStrace(useStrace);
 		sshService.setSudoRemoteBtrbck(sudoRemoteBtrbck);
 		sshService.setSudoRemoteBtrfs(sudoRemoteBtrfs);
 

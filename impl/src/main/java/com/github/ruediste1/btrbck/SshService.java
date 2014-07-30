@@ -64,7 +64,6 @@ public class SshService {
 
 		@Override
 		public void close() throws Exception {
-			process.getInputStream().close();
 			process.waitFor();
 		}
 	}

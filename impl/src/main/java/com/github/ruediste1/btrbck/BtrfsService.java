@@ -12,6 +12,7 @@ import javax.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.github.ruediste1.btrbck.SyncService.SendFileSpec;
 import com.github.ruediste1.btrbck.dom.Snapshot;
@@ -31,6 +32,16 @@ public class BtrfsService {
 
 	private boolean useSudo() {
 		return Boolean.TRUE.equals(useSudo.get());
+	}
+
+	private ThreadLocal<Boolean> useStrace = new ThreadLocal<>();
+
+	public void setUseStrace(boolean value) {
+		useStrace.set(value);
+	}
+
+	private boolean useStrace() {
+		return Boolean.TRUE.equals(useStrace.get());
 	}
 
 	public void createSubVolume(Path subVolumeDir) {
@@ -82,6 +93,12 @@ public class BtrfsService {
 	}
 
 	private ProcessBuilder processBuilder(LinkedList<String> list) {
+		if (useStrace()) {
+			list.addFirst("-ff");
+			list.addFirst("strace." + MDC.get("id") + ".log");
+			list.addFirst("-o");
+			list.addFirst("strace");
+		}
 		if (useSudo()) {
 			list.addFirst("sudo");
 		}
@@ -93,23 +110,10 @@ public class BtrfsService {
 	public void deleteSubVolume(Path subVolumeDir) {
 		String path = subVolumeDir.toAbsolutePath().toString();
 		try {
-			int retries = 0;
-			while (true) {
-				int exitValue = processBuilder("btrfs", "subvolume", "delete",
-						path).start().waitFor();
-				if (exitValue != 0) {
-					log.debug("Delete: Exit code was " + exitValue);
-				}
-				if (exitValue != 1) {
-					// quit retry loop if everything went well
-					break;
-				} else if (retries > 3) {
-					// there was an error and no more retries, throw exception
-					throw new IOException("exit code: " + exitValue);
-				}
-
-				retries++;
-				Thread.sleep(retries * 100);
+			int exitValue = processBuilder("btrfs", "subvolume", "delete", path)
+					.start().waitFor();
+			if (exitValue != 0) {
+				throw new IOException("exit code: " + exitValue);
 			}
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Error while deleting sub volume in "
@@ -179,9 +183,6 @@ public class BtrfsService {
 
 				int exitValue = processBuilder(list).start().waitFor();
 				if (exitValue != 0) {
-					log.debug("TakeSnapshot: Exit code was " + exitValue);
-				}
-				if (exitValue == 1) {
 					throw new IOException("exit code: " + exitValue);
 				}
 			}
