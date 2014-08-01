@@ -236,8 +236,22 @@ public class CliMain {
 	}
 
 	private void cmdPrune() {
-		// TODO Auto-generated method stub
-
+		if (arguments.size() == 1) {
+			// prune all streams
+			StreamRepository repo = readAndLockRepository();
+			for (String streamName : streamService.getStreamNames(repo)) {
+				Stream stream = streamService.readStream(repo, streamName);
+				streamService.pruneSnapshots(stream);
+			}
+		} else if (arguments.size() == 2) {
+			// prune single stream
+			String streamName = arguments.get(1);
+			StreamRepository repo = readAndLockRepository();
+			Stream stream = streamService.readStream(repo, streamName);
+			streamService.pruneSnapshots(stream);
+		} else {
+			throw new DisplayException("Illegal number of arguments");
+		}
 	}
 
 	private void cmdProcess() {

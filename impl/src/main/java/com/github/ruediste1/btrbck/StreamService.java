@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -17,19 +19,23 @@ import javax.xml.bind.JAXBException;
 
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
+import org.joda.time.Interval;
 import org.joda.time.Period;
+import org.joda.time.chrono.ISOChronology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.ruediste1.btrbck.dom.ApplicationStreamRepository;
+import com.github.ruediste1.btrbck.dom.Retention;
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
+import com.github.ruediste1.btrbck.dom.TimeUnit;
 import com.github.ruediste1.btrbck.dom.VersionHistory;
 
 /**
  * Provides operations on {@link Stream}s
- * 
+ *
  */
 @Singleton
 public class StreamService {
@@ -110,6 +116,17 @@ public class StreamService {
 		Stream stream = new Stream();
 		stream.streamRepository = streamRepository;
 		stream.name = name;
+
+		// temp setup
+		{
+			stream.initialRetentionPeriod = Period.days(1);
+
+			Retention retention = new Retention();
+			retention.period = Period.weeks(1);
+			retention.timeUnit = TimeUnit.DAY;
+			retention.snapshotsPerTimeUnit = 1;
+			stream.retentions.add(retention);
+		}
 
 		Files.createDirectory(stream.getStreamMetaDirectory());
 		Files.createDirectory(stream.getSnapshotsDir());
@@ -249,14 +266,14 @@ public class StreamService {
 
 	/**
 	 * Restore a snapshot.
-	 * 
+	 *
 	 * The following list outlines the steps taken:
 	 * <ol>
 	 * <li>delete working directory</li>
 	 * <li>update version file</li>
 	 * <li>restore working directory</li>
 	 * </ol>
-	 * 
+	 *
 	 * If the process is aborted at any stage (power loss), the command can
 	 * simply be executed again.
 	 */
@@ -317,6 +334,34 @@ public class StreamService {
 	}
 
 	public void pruneSnapshots(Stream stream) {
+		DateTime now = new DateTime(ISOChronology.getInstanceUTC());
+		TreeMap<DateTime, Boolean> keepSnapshot = new TreeMap<>();
+		HashMap<DateTime, Snapshot> snapshotMap = new HashMap<>();
+		Interval initialRetentionInterval = stream
+				.getInitialRetentionInterval(now);
 
+		// fill maps
+		for (Snapshot s : getSnapshots(stream).values()) {
+			keepSnapshot.put(s.date, s.date.isAfter(now)
+					|| initialRetentionInterval.contains(s.date));
+			snapshotMap.put(s.date, s);
+		}
+
+		// process retentions
+		for (Retention r : stream.retentions) {
+			for (DateTime time : r.retentionTimes(now)) {
+				DateTime key = keepSnapshot.ceilingKey(time);
+				if (key != null) {
+					keepSnapshot.put(key, true);
+				}
+			}
+		}
+
+		// delete streams which are not to be retained
+		for (Entry<DateTime, Boolean> entry : keepSnapshot.entrySet()) {
+			if (!entry.getValue()) {
+				deleteSnapshot(snapshotMap.get(entry.getKey()));
+			}
+		}
 	}
 }

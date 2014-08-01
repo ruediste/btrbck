@@ -3,42 +3,51 @@ package com.github.ruediste1.btrbck.dom;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 
 /**
  * Describes a set of {@link Snapshot}s that should be retained.
- * 
+ *
  * <p>
  * The {@link #period} defines how far back from now the snapshots are to be
  * retained. During this time, {@link #snapshotsPerTimeUnit} snapshots should be
  * retained per {@link #timeUnit}. The snapshots should be evenly distributed
  * within the time unit.
  * </p>
- * 
+ *
  * <p>
  * The {@link Retention} defines a set of instants for which snapshots should
  * ideally be retained. Since there is usually no snapshot at this precise
  * instant, the next snapshot is taken.
  * </p>
  */
+@XmlRootElement
 public class Retention {
 	/**
 	 * Defines how far back snapshots should be retained
 	 */
+	@XmlJavaTypeAdapter(PeriodAdapter.class)
+	@XmlAttribute
 	public Period period;
 
 	/**
 	 * {@link #snapshotsPerTimeUnit} {@link Snapshot}s per {@link #timeUnit}
 	 * should be retained.
 	 */
+	@XmlAttribute
 	public TimeUnit timeUnit;
 
 	/**
 	 * {@link #snapshotsPerTimeUnit} {@link Snapshot}s per {@link #timeUnit}
 	 * should be retained.
 	 */
+	@XmlAttribute
 	public int snapshotsPerTimeUnit;
 
 	public Set<DateTime> retentionTimes(DateTime now) {
