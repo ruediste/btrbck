@@ -1,25 +1,21 @@
 package com.github.ruediste1.btrbck.dom;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.common.base.Strings;
+
 public class SshTarget {
 	private Integer port;
-	private File keyFile;
 	private String host;
 	private String user;
-	private List<String> parameters = new ArrayList<>();
 
 	public SshTarget() {
 	}
 
 	/**
 	 * Create a new {@link SshTarget} by parsing the given string. the format is
-	 * 
+	 *
 	 * <pre>
 	 * {@code
 	 * [<user>@]<host>[:<port>]
@@ -43,12 +39,25 @@ public class SshTarget {
 		return result;
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		if (!Strings.isNullOrEmpty(user)) {
+			sb.append(user);
+			sb.append("@");
+		}
+		sb.append(host);
+		if (port != null) {
+			sb.append(":");
+			sb.append(port);
+		}
+		return sb.toString();
+	}
+
 	private SshTarget(SshTarget other) {
 		host = other.host;
 		port = other.port;
-		keyFile = other.keyFile;
 		user = other.user;
-		parameters.addAll(other.parameters);
 	}
 
 	public Integer getPort() {
@@ -61,16 +70,6 @@ public class SshTarget {
 		return result;
 	}
 
-	public File getKeyFile() {
-		return keyFile;
-	}
-
-	public SshTarget withKeyFile(File keyFile) {
-		SshTarget result = new SshTarget(this);
-		result.keyFile = keyFile;
-		return result;
-	}
-
 	public String getHost() {
 		return host;
 	}
@@ -78,16 +77,6 @@ public class SshTarget {
 	public SshTarget withHost(String host) {
 		SshTarget result = new SshTarget(this);
 		result.host = host;
-		return result;
-	}
-
-	public List<String> getParameters() {
-		return Collections.unmodifiableList(parameters);
-	}
-
-	public SshTarget withParameter(String parameter) {
-		SshTarget result = new SshTarget(this);
-		result.parameters.add(parameter);
 		return result;
 	}
 

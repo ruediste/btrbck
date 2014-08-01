@@ -82,20 +82,11 @@ public class SshService {
 		LinkedList<String> list = new LinkedList<String>();
 		list.add("ssh");
 
-		// add keyfile
-		if (target.getKeyFile() != null) {
-			list.add("-i");
-			list.add(target.getKeyFile().getAbsolutePath());
-		}
-
 		// add port
 		if (target.getPort() != null) {
 			list.add("-p");
 			list.add(target.getPort().toString());
 		}
-
-		// add other parameters
-		list.addAll(target.getParameters());
 
 		// add host
 		list.add(target.getHost());

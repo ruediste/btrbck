@@ -15,7 +15,7 @@ import org.junit.Test;
 
 import com.github.ruediste1.btrbck.test.TestBase;
 
-public class StreamUnitTest extends TestBase {
+public class StreamTest extends TestBase {
 
 	@Inject
 	JAXBContext ctx;
@@ -24,11 +24,13 @@ public class StreamUnitTest extends TestBase {
 	public void testXmlSerialization() throws JAXBException {
 		Stream stream = new Stream();
 		stream.initialRetentionPeriod = Period.days(3);
-		Retention retention = new Retention();
-		retention.period = Period.days(2);
-		retention.timeUnit = TimeUnit.HOUR;
-		retention.snapshotsPerTimeUnit = 4;
-		stream.retentions.add(retention);
+		{
+			Retention retention = new Retention();
+			retention.period = Period.days(2);
+			retention.timeUnit = TimeUnit.HOUR;
+			retention.snapshotsPerTimeUnit = 4;
+			stream.retentions.add(retention);
+		}
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		ctx.createMarshaller().marshal(stream, out);
@@ -36,10 +38,12 @@ public class StreamUnitTest extends TestBase {
 				new ByteArrayInputStream(out.toByteArray()));
 
 		assertThat(readStream.initialRetentionPeriod, is(Period.days(3)));
+
 		assertThat(readStream.retentions.size(), is(1));
-		Retention readRetention = readStream.retentions.get(0);
-		assertThat(readRetention.period, is(Period.days(2)));
-		assertThat(readRetention.timeUnit, is(TimeUnit.HOUR));
-		assertThat(readRetention.snapshotsPerTimeUnit, is(4));
+		Retention retention = readStream.retentions.get(0);
+		assertThat(retention.period, is(Period.days(2)));
+		assertThat(retention.timeUnit, is(TimeUnit.HOUR));
+		assertThat(retention.snapshotsPerTimeUnit, is(4));
+
 	}
 }

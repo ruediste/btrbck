@@ -41,6 +41,8 @@ import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.SshTarget;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
+import com.github.ruediste1.btrbck.dom.SyncConfiguration;
+import com.google.common.base.Strings;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Guice;
@@ -69,9 +71,6 @@ public class CliMain {
 
 	@Option(name = "-sudoRemoteBtrfs", usage = "if given, use sudo to execute remote btrfs commands")
 	boolean sudoRemoteBtrfs;
-
-	@Option(name = "-i", usage = "the key file to be used by ssh")
-	File keyFile;
 
 	@Option(name = "-v", usage = "show verbose output")
 	boolean verbose;
@@ -174,8 +173,11 @@ public class CliMain {
 			throw new DisplayException("Usage: sendSnapshots <streamName>");
 		}
 		StreamRepository repo = readAndLockRepository();
-		streamTransferService.sendSnapshots(repo, arguments.get(1), System.in,
+		String streamName = arguments.get(1);
+		streamTransferService.sendSnapshots(repo, streamName, System.in,
 				System.out);
+		streamService
+		.pruneSnapshots(streamService.readStream(repo, streamName));
 	}
 
 	private void cmdReceiveSnapshots() {
@@ -183,8 +185,11 @@ public class CliMain {
 			throw new DisplayException("Usage: receiveSnapshots <streamName>");
 		}
 		StreamRepository repo = readAndLockRepository();
-		streamTransferService.receiveSnapshots(repo, arguments.get(1),
-				System.in, System.out, createTargetStreams);
+		String streamName = arguments.get(1);
+		streamTransferService.receiveSnapshots(repo, streamName, System.in,
+				System.out, createTargetStreams);
+		streamService
+				.pruneSnapshots(streamService.readStream(repo, streamName));
 	}
 
 	private void parseCmdLine(String[] args) {
@@ -261,6 +266,34 @@ public class CliMain {
 			Stream stream = streamService.readStream(repo, name);
 			streamService.takeSnapshotIfRequired(stream, now);
 			streamService.pruneSnapshots(stream);
+
+			for (SyncConfiguration config : repo.syncConfigurations) {
+				if (config.isSynced(name)) {
+					RemoteRepository remote = new RemoteRepository();
+					remote.location = config.remoteRepoLocation;
+					remote.sshTarget = SshTarget.parse(config.sshTarget);
+					String remoteStreamName = name;
+					if (!Strings.isNullOrEmpty(config.remoteStreamName)) {
+						remoteStreamName = config.remoteStreamName;
+					}
+					switch (config.direction) {
+					case PULL:
+						streamTransferService.pull(repo, name, remote,
+								remoteStreamName,
+								config.createRemoteIfNecessary);
+						break;
+
+					case PUSH:
+						streamTransferService.push(stream, remote,
+								remoteStreamName,
+								config.createRemoteIfNecessary);
+						break;
+					default:
+						throw new RuntimeException("Should not happen");
+
+					}
+				}
+			}
 		}
 
 	}
@@ -275,8 +308,7 @@ public class CliMain {
 		}
 
 		String streamName = arguments.get(1);
-		SshTarget sshTarget = SshTarget.parse(arguments.get(2)).withKeyFile(
-				keyFile);
+		SshTarget sshTarget = SshTarget.parse(arguments.get(2));
 
 		String remoteStreamName = streamName;
 		if (arguments.size() == 5) {
@@ -303,8 +335,7 @@ public class CliMain {
 			throw new DisplayException("Too many arguments");
 		}
 
-		SshTarget sshTarget = SshTarget.parse(arguments.get(1)).withKeyFile(
-				keyFile);
+		SshTarget sshTarget = SshTarget.parse(arguments.get(1));
 		String remoteRepoPath = arguments.get(2);
 
 		String remoteStreamName = arguments.get(3);

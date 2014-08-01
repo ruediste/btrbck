@@ -9,6 +9,7 @@ import com.github.ruediste1.btrbck.dom.RestoreVersionHistoryEntry;
 import com.github.ruediste1.btrbck.dom.Retention;
 import com.github.ruediste1.btrbck.dom.SnapshotVersionHistoryEntry;
 import com.github.ruediste1.btrbck.dom.Stream;
+import com.github.ruediste1.btrbck.dom.SyncConfiguration;
 import com.github.ruediste1.btrbck.dom.TimeUnit;
 import com.github.ruediste1.btrbck.dom.VersionHistory;
 import com.github.ruediste1.btrbck.dom.VersionHistoryEntry;
@@ -26,7 +27,7 @@ public class GuiceModule extends AbstractModule {
 							RestoreVersionHistoryEntry.class,
 							BackupStreamRepository.class,
 							ApplicationStreamRepository.class, Retention.class,
-							TimeUnit.class));
+							TimeUnit.class, SyncConfiguration.class));
 		} catch (JAXBException e) {
 			throw new RuntimeException("Error while creating JAXB context", e);
 		}

@@ -1,7 +1,10 @@
 package com.github.ruediste1.btrbck.dom;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
+import javax.xml.bind.annotation.XmlElementRef;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
@@ -16,6 +19,9 @@ public abstract class StreamRepository {
 	 */
 	@XmlTransient
 	public Path rootDirectory;
+
+	@XmlElementRef
+	public final List<SyncConfiguration> syncConfigurations = new ArrayList<>();
 
 	/**
 	 * Return the directory containing the repository meta data
