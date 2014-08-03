@@ -7,6 +7,8 @@ Backup tool leveraging BTRFS for incremental backups. Key features:
 freely configure how long they are kept.
 * **Snapshot transfer via SSH**: Widespread and secure way of data transfer.
 * **Simple Command Line Tool**: Easy to setup, easy to use.
+* **Look at your Snapshots any Time**: Snapshots are directly visible in the
+file system.
 
 ## Introduction
 Traditional backup systems have two inherent pain points which
@@ -21,11 +23,11 @@ application as if a power loss had occurred.
 
 2. **Cumbersome Incremental Snapshots**: Managing a combination of 
 full and incremental backups is complicated and the restore time
-might suffer. If the snapshots on the backup server are kept within
-a BTRFS file system, snapshots just share common data and store the 
+might suffer. With BTRBCK, the snapshots on the backup server are kept within
+a BTRFS file system. Snapshots just share common data and store the 
 differences at a block level. There its no distinction between full and 
 incremental snapshots. The time penalty of restoring a full backup an applying
-thens of incremental backups goes away. Any snapshot can be deleted,
+tens of incremental backups goes away. Any snapshot can be deleted,
 without affecting any other snapshot.
 
 BTRBCK works with so called snapshot streams. All data of an application (Database, File store, ...)
@@ -40,7 +42,7 @@ directories. Besides this, the two repository types have identical functionality
 Backup stream repositories are intended to be used on backup hosts, where no working directories are required, while
 application stream repositories are required to run applications.
 
-To set up a backup, your server and your backup host needs to use a BTRFS file system. Create an application
+To set up a backup, your server and your backup host need to use a BTRFS file system. Create an application
 stream repository on the server and a backup stream repository on the backup host. Now you can create streams
 on the server and sync them to the backup host.
 
@@ -84,4 +86,54 @@ for the root user. Then run
     btrbck push myStream root@<host> <remote repo path>
     
 This will transfer all snapshots to the remote host.
- 
+
+## Permissions
+To operate, BTRBCK needs to invoke the `btrfs` and `chown` commands as super user. This 
+also includes invocation on remote systems (`push` and `pull` to/from other hosts), where
+sudo has to be set up in password less configuration. This can be accomplished by 
+
+1. running `btrbck` as root
+1. using `sudo btrbck`
+1. instructing `btrbck` to use sudo commands
+
+Variant 1 is the simplest and needs no further explanation. For variant 2, you have to use
+the `-sudoRemoteBtrbck` flag and add an `/etc/sudoers.d/btrbck` file with the following contents:
+
+    %sudo	ALL = (ALL) NOPASSWD: /usr/bin/btrbck
+
+For variant 3, add a `/etc/sudoers.d/btrbck` file with the following. In addition, the
+`-sudo` and `-sudoRemoteBtrfs` flags have to be specified on the command line.
+
+    %sudo	ALL = (ALL) NOPASSWD: /sbin/btrfs
+    %sudo	ALL = (ALL) NOPASSWD: /bin/chown
+
+## Snapshot Retention
+Taking snapshots is all good an fine, but at some time you'll want to thin them out. If snapshots are taken every 10 minutes,
+a snapshot retention configuration might look as follows:
+
+* keep all snapshots for one hour
+* keep one snapshot per hour for one day
+* keep 4 snapshots a day for a week
+* keep one snapshot a week for a month
+* keep one snapshot a month for a year
+* keep one snapshot per year for 10 years.
+* keep one snapshot per decade for 100 years.
+
+This can be configured on a per stream level. The stream configuration file can be found in `.backup/<stream name>/<stream name>.xml`
+for application stream repositories and in `<stream name>/<stream name>.xml` in backup stream repositories. The following is
+the configuration for the example above:
+
+    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <stream initialRetentionPeriod="PT1H" snapshotInterval="PT10M">
+      <retention period="P1D" timeUnit="HOUR" snapshotsPerTimeUnit="1"/>
+      <retention period="P1W" timeUnit="DAY" snapshotsPerTimeUnit="4"/>
+      <retention period="P1M" timeUnit="WEEK" snapshotsPerTimeUnit="1"/>
+      <retention period="P1Y" timeUnit="MONTH" snapshotsPerTimeUnit="1"/>
+      <retention period="P10Y" timeUnit="YEAR" snapshotsPerTimeUnit="1"/>
+      <retention period="P100Y" timeUnit="DECADE" snapshotsPerTimeUnit="1"/>
+    </stream>
+
+The `snapshotIterval` will be discussed below. All Periods are specified according to [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601).
+Basically, the format is `PnYnMnDTnHnMnS`, where zeros can be omitted and the `T` is used to indicate the start of the time part.
+
+## Automatic Processing
