@@ -1,6 +1,7 @@
 package com.github.ruediste1.btrbck;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -26,10 +27,13 @@ public class StreamRepositoryService {
 	public <T extends StreamRepository> T createRepository(Class<T> clazz,
 			Path location) throws IOException {
 		T repository;
+		String templateName;
 		if (clazz.equals(ApplicationStreamRepository.class)) {
 			repository = (T) new ApplicationStreamRepository();
+			templateName = "applicationRepository";
 		} else if (clazz.equals(BackupStreamRepository.class)) {
 			repository = (T) new BackupStreamRepository();
+			templateName = "backupRepository";
 		} else {
 			throw new RuntimeException("unknown repository type " + clazz);
 		}
@@ -42,17 +46,9 @@ public class StreamRepositoryService {
 		// create lock files
 		Util.initializeLockFile(repository.getRepositoryLockFile());
 
-		// create repository.xml
-		try {
-			ctx.createMarshaller().marshal(repository,
-					repository.getRepositoryXmlFile().toFile());
-		} catch (JAXBException e) {
-			throw new RuntimeException(
-					"Error while writing repository configuration", e);
-		}
-		// IputStream in = getClass().getClassLoader().getResourceAsStream(
-		// "repository.template.xml");
-		// Files.copy(in, repository.getRepositoryXmlFile());
+		InputStream in = getClass().getClassLoader().getResourceAsStream(
+				templateName + ".template.xml");
+		Files.copy(in, repository.getRepositoryXmlFile());
 		return repository;
 	}
 

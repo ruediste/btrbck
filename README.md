@@ -85,7 +85,8 @@ for the root user. Then run
     
     btrbck push myStream root@<host> <remote repo path>
     
-This will transfer all snapshots to the remote host.
+This will transfer all snapshots to the remote host. Please not that for this to work, the root of the file system has 
+to be mounted directly. Subvolume mounts do not work for send/receive due to a bug in `btrfs-tools`.
 
 ## Permissions
 To operate, BTRBCK needs to invoke the `btrfs` and `chown` commands as super user. This 
@@ -165,7 +166,8 @@ Multiple configurations are allowed.
         streamPatterns="*"/>
     </applicationStreamRepository>
 
- The `streamPatterns` attribute is a comma separated
+The direction can be `PULL` or `PUSH`.
+The `streamPatterns` attribute is a comma separated
 list. Each element is the name of a stream which may contain * as
 wildcard. If an element starts with a - any matching stream will be
 excluded from the set of synced streams. For each local stream name, the
@@ -174,6 +176,6 @@ stream is in the set of synced streams or not. If no pattern matches, the
 stream is not included in the set of synced streams.
 
 ## Development
-The unit tests expect `/data/tmp` to reside on a btrfs file system. Due to a bug in `btrfs-progs`, the root of the file system has 
+The unit tests expect `/data/tmp` to reside on a btrfs file system. Due to a bug in `btrfs-tools`, the root of the file system has 
 to be mounted directly. Subvolume mounts do not work for send/receive.
 

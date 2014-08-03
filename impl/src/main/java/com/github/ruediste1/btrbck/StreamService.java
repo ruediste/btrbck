@@ -2,6 +2,7 @@ package com.github.ruediste1.btrbck;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -30,7 +31,6 @@ import com.github.ruediste1.btrbck.dom.Retention;
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.StreamRepository;
-import com.github.ruediste1.btrbck.dom.TimeUnit;
 import com.github.ruediste1.btrbck.dom.VersionHistory;
 
 /**
@@ -117,17 +117,6 @@ public class StreamService {
 		stream.streamRepository = streamRepository;
 		stream.name = name;
 
-		// temp setup
-		{
-			stream.initialRetentionPeriod = Period.days(1);
-
-			Retention retention = new Retention();
-			retention.period = Period.weeks(1);
-			retention.timeUnit = TimeUnit.DAY;
-			retention.snapshotsPerTimeUnit = 1;
-			stream.retentions.add(retention);
-		}
-
 		Files.createDirectory(stream.getStreamMetaDirectory());
 		Files.createDirectory(stream.getSnapshotsDir());
 		Files.createDirectory(stream.getReceiveTempDir());
@@ -136,8 +125,6 @@ public class StreamService {
 		Files.write(stream.getStreamUuidFile(),
 				stream.id.toString().getBytes("UTF-8"));
 
-		stream.initialRetentionPeriod = Period.days(1);
-
 		if (stream.streamRepository instanceof ApplicationStreamRepository) {
 			Path workingDirectory = ((ApplicationStreamRepository) stream.streamRepository)
 					.getWorkingDirectory(stream);
@@ -145,12 +132,9 @@ public class StreamService {
 		}
 
 		// write stream config
-		try {
-			ctx.createMarshaller().marshal(stream,
-					stream.getStreamConfigFile().toFile());
-		} catch (JAXBException e) {
-			throw new RuntimeException("Error while writing stream", e);
-		}
+		InputStream in = getClass().getClassLoader().getResourceAsStream(
+				"stream.template.xml");
+		Files.copy(in, stream.getStreamConfigFile());
 
 		// initialize version history
 		stream.versionHistory = new VersionHistory();

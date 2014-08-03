@@ -59,7 +59,7 @@ public class StreamServiceTest extends TestBase {
 		assertNull(service.tryReadStream(repository, "test"));
 		Stream stream = service.createStream(repository, "test");
 		assertNotNull(stream.id);
-		assertNotNull(stream.initialRetentionPeriod);
+		assertNull(stream.initialRetentionPeriod);
 		assertNotNull(stream.versionHistory);
 		assertTrue(Files.exists(stream.getStreamConfigFile()));
 		assertTrue(Files.exists(stream.getSnapshotsDir()));

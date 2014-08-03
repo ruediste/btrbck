@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+ <!--
+ initialRetentionPeriod
+   defines for how long no streams should be pruned
+   sample: P1D (one day)
+ snapshotInterval
+   defines how often the process command will create a snapshot
+   sample: PT10M
+  -->
+ <stream initialRetentionPeriod="" snapshotInterval="">
+   <!--
+   A retention describes for how long snapshots are kept
+   period
+     time the retention is active
+   timeUnit
+   snapshotsPerUnit
+     snapshotPerUnit snapshots are kept per time unit
+     time units: SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, YEAR, DECADE 
+   -->
+   <!--  <retention period="P1W" timeUnit="DAY" snapshotsPerTimeUnit="1"/> -->
+ </stream>

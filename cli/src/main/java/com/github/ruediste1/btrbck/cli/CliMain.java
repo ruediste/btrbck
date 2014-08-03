@@ -177,7 +177,7 @@ public class CliMain {
 		streamTransferService.sendSnapshots(repo, streamName, System.in,
 				System.out);
 		streamService
-		.pruneSnapshots(streamService.readStream(repo, streamName));
+				.pruneSnapshots(streamService.readStream(repo, streamName));
 	}
 
 	private void cmdReceiveSnapshots() {
@@ -247,6 +247,7 @@ public class CliMain {
 			for (String streamName : streamService.getStreamNames(repo)) {
 				Stream stream = streamService.readStream(repo, streamName);
 				streamService.pruneSnapshots(stream);
+				System.out.println("Pruned snapshots of " + streamName);
 			}
 		} else if (arguments.size() == 2) {
 			// prune single stream
@@ -254,6 +255,7 @@ public class CliMain {
 			StreamRepository repo = readAndLockRepository();
 			Stream stream = streamService.readStream(repo, streamName);
 			streamService.pruneSnapshots(stream);
+			System.out.println("Pruned snapshots of " + streamName);
 		} else {
 			throw new DisplayException("Illegal number of arguments");
 		}
@@ -295,7 +297,7 @@ public class CliMain {
 				}
 			}
 		}
-
+		System.out.println("Processed repository");
 	}
 
 	private void cmdPush() {
@@ -324,6 +326,7 @@ public class CliMain {
 
 		streamTransferService.push(stream, remoteRepo, remoteStreamName,
 				createTargetStreams);
+		System.out.println("pushed shapshots of " + streamName);
 	}
 
 	private void cmdPull() {
@@ -354,6 +357,7 @@ public class CliMain {
 		streamTransferService.pull(repo, streamName, remoteRepo,
 				remoteStreamName, createTargetStreams);
 
+		System.out.println("pulled shapshots to " + streamName);
 	}
 
 	private void cmdList() {
@@ -401,13 +405,15 @@ public class CliMain {
 						BackupStreamRepository.class, location);
 			}
 
-			System.out.println("Created repository in "
-					+ repo.rootDirectory.toAbsolutePath());
+			System.out.println("Created "
+					+ (applicationRepository ? "application" : "backup")
+					+ " repository in " + repo.rootDirectory.toAbsolutePath());
 		} else if (arguments.size() == 2) {
 			// create stream
 			String streamName = arguments.get(1);
 			StreamRepository repo = readAndLockRepository();
 			streamService.createStream(repo, streamName);
+			System.out.println("created stream " + streamName);
 		} else {
 			throw new DisplayException("too many arguments");
 		}
@@ -419,9 +425,12 @@ public class CliMain {
 			// delete repository
 			streamService.deleteStreams(repo);
 			streamRepositoryService.deleteEmptyRepository(repo);
+			System.out.println("Deleted repository");
 		} else if (arguments.size() == 2) {
 			StreamRepository repo = readAndLockRepository();
-			streamService.deleteStream(repo, arguments.get(1));
+			String streamName = arguments.get(1);
+			streamService.deleteStream(repo, streamName);
+			System.out.println("Deleted " + streamName);
 		} else {
 			throw new DisplayException("too many arguments");
 		}
@@ -431,15 +440,17 @@ public class CliMain {
 	private void cmdSnapshot() {
 		if (arguments.size() == 1) {
 			StreamRepository repo = readAndLockRepository();
-			for (String name : streamService.getStreamNames(repo)) {
-				Stream stream = streamService.readStream(repo, name);
+			for (String streamName : streamService.getStreamNames(repo)) {
+				Stream stream = streamService.readStream(repo, streamName);
 				streamService.takeSnapshot(stream);
+				System.out.println("took snapshot of " + streamName);
 			}
 		} else if (arguments.size() == 2) {
 			StreamRepository repo = readAndLockRepository();
 			String streamName = arguments.get(1);
 			Stream stream = streamService.readStream(repo, streamName);
 			streamService.takeSnapshot(stream);
+			System.out.println("took snapshot of " + streamName);
 		} else {
 			throw new DisplayException("too many arguments");
 		}
@@ -449,23 +460,31 @@ public class CliMain {
 		if (arguments.size() == 1) {
 			// restore the latest snapshot of all streams
 			StreamRepository repo = readAndLockRepository();
-			for (String name : streamService.getStreamNames(repo)) {
-				Stream stream = streamService.readStream(repo, name);
+			for (String streamName : streamService.getStreamNames(repo)) {
+				Stream stream = streamService.readStream(repo, streamName);
 				streamService.restoreLatestSnapshot(stream);
+				System.out.println("restored latest snapshot of " + streamName);
 			}
-		} else if (arguments.size() == 2) {
-			// restore the latest snapshot of a single stream
-			StreamRepository repo = readAndLockRepository();
-			Stream stream = streamService.readStream(repo, arguments.get(1));
-			streamService.restoreLatestSnapshot(stream);
-		} else if (arguments.size() == 3) {
-			// restore a specific snapshot of a single stream
-			StreamRepository repo = readAndLockRepository();
-			Stream stream = streamService.readStream(repo, arguments.get(1));
-			int snapshotNr = Integer.parseInt(arguments.get(2));
-			streamService.restoreSnapshot(stream, snapshotNr);
 		} else {
-			throw new DisplayException("too many arguments");
+			if (arguments.size() == 2) {
+				// restore the latest snapshot of a single stream
+				String streamName = arguments.get(1);
+				StreamRepository repo = readAndLockRepository();
+				Stream stream = streamService.readStream(repo, streamName);
+				streamService.restoreLatestSnapshot(stream);
+				System.out.println("restored latest snapshot of " + streamName);
+			} else if (arguments.size() == 3) {
+				// restore a specific snapshot of a single stream
+				String streamName = arguments.get(1);
+				StreamRepository repo = readAndLockRepository();
+				Stream stream = streamService.readStream(repo, streamName);
+				int snapshotNr = Integer.parseInt(arguments.get(2));
+				streamService.restoreSnapshot(stream, snapshotNr);
+				System.out.println("restored snapshot " + snapshotNr + " of "
+						+ streamName);
+			} else {
+				throw new DisplayException("too many arguments");
+			}
 		}
 
 	}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<backupStreamRepository>
+
+<!-- The following is a sample sync configuration -->
+  <!--  <syncConfiguration 
+    direction="PULL" 
+    sshTarget="user@host:port" 
+    remoteRepoLocation="/backup" 
+    createRemoteIfNecessary="true" 
+    streamPatterns="*"/>
+    -->
+</backupStreamRepository>
