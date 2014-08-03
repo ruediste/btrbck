@@ -1,0 +1,7 @@
+Package: [[name]]
+Version: [[version]]
+Section: admin
+Priority: low
+Architecture: all
+Description: [[description]]
+Maintainer: ruediste@gmail.com

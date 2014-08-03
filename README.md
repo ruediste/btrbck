@@ -44,4 +44,8 @@ To set up a backup, your server and your backup host needs to use a BTRFS file s
 stream repository on the server and a backup stream repository on the backup host. Now you can create streams
 on the server and sync them to the backup host.
 
-## Getting Started 
+## Getting Started
+BTRBCK comes as a single executable jar. Copy the `.jar` to 
+`/usr/share/btrbck` and create a shell wrapper under `/usr/bin`
+to start it.
+
