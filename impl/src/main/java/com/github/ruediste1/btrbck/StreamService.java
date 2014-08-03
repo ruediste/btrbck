@@ -35,7 +35,7 @@ import com.github.ruediste1.btrbck.dom.VersionHistory;
 
 /**
  * Provides operations on {@link Stream}s
- *
+ * 
  */
 @Singleton
 public class StreamService {
@@ -266,14 +266,14 @@ public class StreamService {
 
 	/**
 	 * Restore a snapshot.
-	 *
+	 * 
 	 * The following list outlines the steps taken:
 	 * <ol>
 	 * <li>delete working directory</li>
 	 * <li>update version file</li>
 	 * <li>restore working directory</li>
 	 * </ol>
-	 *
+	 * 
 	 * If the process is aborted at any stage (power loss), the command can
 	 * simply be executed again.
 	 */
@@ -334,6 +334,12 @@ public class StreamService {
 	}
 
 	public void pruneSnapshots(Stream stream) {
+		if (stream.initialRetentionPeriod == null
+				&& stream.retentions.isEmpty()) {
+			// no retentions, do not prune
+			return;
+		}
+
 		DateTime now = new DateTime(ISOChronology.getInstanceUTC());
 		TreeMap<DateTime, Boolean> keepSnapshot = new TreeMap<>();
 		HashMap<DateTime, Snapshot> snapshotMap = new HashMap<>();

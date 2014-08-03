@@ -136,4 +136,44 @@ the configuration for the example above:
 The `snapshotIterval` will be discussed below. All Periods are specified according to [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601).
 Basically, the format is `PnYnMnDTnHnMnS`, where zeros can be omitted and the `T` is used to indicate the start of the time part.
 
+If neither initialRetentionPeriod nor any retentions are defined, no snapshots are pruned.
+
 ## Automatic Processing
+BTRBCK has been prepared to operate in a fully automatic manner. This is enabled by adding a cron job running the `btrbck process` command.
+The following actions are taken for each stream:
+
+1. Take a snapshot as defined in the `snapshotInterval` in the stream `.xml` file. A snapshot is taken if the last snapshot
+is older than the snapshot interval. If you want snapshots for example every hour, make the cron job run process every hour but
+set the interval to something less, like 9 minutes 30 seconds. This makes sure that a snapshot is taken whenever the cron job
+is run. Otherwise, some snapshots might be skipped.
+
+1. Prune snapshots as defined in the stream `.xml` file.
+
+1. Sync the stream as defined in the repository configuration (see below)
+
+The repository configuration is stored in the `repository.xml` file or in 
+`.backup/repository.xml`. It contains the synchronization configuration for the repository.
+Multiple configurations are allowed.
+
+    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <applicationStreamRepository>
+      <syncConfiguration 
+        direction="PULL" 
+        sshTarget="user@host:port" 
+        remoteRepoLocation="/backup" 
+        createRemoteIfNecessary="true" 
+        streamPatterns="*"/>
+    </applicationStreamRepository>
+
+ The `streamPatterns` attribute is a comma separated
+list. Each element is the name of a stream which may contain * as
+wildcard. If an element starts with a - any matching stream will be
+excluded from the set of synced streams. For each local stream name, the
+list is traversed from left to right. The first match decides if the
+stream is in the set of synced streams or not. If no pattern matches, the
+stream is not included in the set of synced streams.
+
+## Development
+The unit tests expect `/data/tmp` to reside on a btrfs file system. Due to a bug in `btrfs-progs`, the root of the file system has 
+to be mounted directly. Subvolume mounts do not work for send/receive.
+

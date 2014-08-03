@@ -17,6 +17,9 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.Period;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +57,7 @@ public class StreamServiceTest extends TestBase {
 	@Test
 	public void testCreateAndReadStream() throws IOException {
 		assertNull(service.tryReadStream(repository, "test"));
-		Stream stream = createStream("test");
+		Stream stream = service.createStream(repository, "test");
 		assertNotNull(stream.id);
 		assertNotNull(stream.initialRetentionPeriod);
 		assertNotNull(stream.versionHistory);
@@ -80,7 +83,7 @@ public class StreamServiceTest extends TestBase {
 	public void testGetStreamNames() throws Exception {
 		assertTrue(service.getStreamNames(repository).isEmpty());
 
-		createStream("test");
+		service.createStream(repository, "test");
 
 		Set<String> streamNames = service.getStreamNames(repository);
 		assertEquals(1, streamNames.size());
@@ -89,7 +92,7 @@ public class StreamServiceTest extends TestBase {
 
 	@Test
 	public void testDeleteStream() throws Exception {
-		Stream stream = createStream("test");
+		Stream stream = service.createStream(repository, "test");
 		service.takeSnapshot(stream);
 
 		assertFalse(service.getStreamNames(repository).isEmpty());
@@ -103,13 +106,9 @@ public class StreamServiceTest extends TestBase {
 		assertFalse(Files.exists(repository.getWorkingDirectory(stream)));
 	}
 
-	private Stream createStream(String name) throws IOException {
-		return service.createStream(repository, name);
-	}
-
 	@Test
 	public void testDeleteStreams() throws Exception {
-		Stream stream = createStream("test");
+		Stream stream = service.createStream(repository, "test");
 		assertFalse(service.getStreamNames(repository).isEmpty());
 		assertTrue(Files.exists(stream.getStreamMetaDirectory()));
 		assertTrue(Files.exists(repository.getWorkingDirectory(stream)));
@@ -123,7 +122,7 @@ public class StreamServiceTest extends TestBase {
 
 	@Test
 	public void testTakeAndDeleteSnapshot() throws Exception {
-		Stream stream = createStream("test");
+		Stream stream = service.createStream(repository, "test");
 		// create test file
 		{
 			Path testFile = repository.getWorkingDirectory(stream).resolve(
@@ -146,7 +145,7 @@ public class StreamServiceTest extends TestBase {
 
 	@Test
 	public void testRestoreSnapshot() throws Exception {
-		Stream stream = createStream("test");
+		Stream stream = service.createStream(repository, "test");
 		// create test file
 
 		Path testFile = repository.getWorkingDirectory(stream).resolve(
@@ -173,6 +172,27 @@ public class StreamServiceTest extends TestBase {
 		assertThat(lastEntry, instanceOf(RestoreVersionHistoryEntry.class));
 		assertThat(((RestoreVersionHistoryEntry) lastEntry).restoredSnapshotNr,
 				is(snapshot.nr));
+	}
+
+	@Test
+	public void testPruneSnapshots() throws Exception {
+		DateTimeUtils.setCurrentMillisFixed(new DateTime(2014, 1, 1, 0, 0, 0)
+				.getMillis());
+		Stream stream = service.createStream(repository, "test");
+		Snapshot snapshot = service.takeSnapshot(stream);
+		DateTimeUtils.setCurrentMillisFixed(new DateTime(2014, 1, 2, 0, 0, 0)
+				.getMillis());
+
+		// no retention is defined, so no snapshots sould be deleted
+		stream.retentions.clear();
+		stream.initialRetentionPeriod = null;
+		service.pruneSnapshots(stream);
+		assertThat(Files.exists(snapshot.getSnapshotDir()), is(true));
+
+		// set retention, snapshot should be deleted
+		stream.initialRetentionPeriod = Period.minutes(10);
+		service.pruneSnapshots(stream);
+		assertThat(Files.exists(snapshot.getSnapshotDir()), is(false));
 	}
 
 }
