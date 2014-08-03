@@ -45,7 +45,43 @@ stream repository on the server and a backup stream repository on the backup hos
 on the server and sync them to the backup host.
 
 ## Getting Started
-BTRBCK comes as a single executable jar. Copy the `.jar` to 
-`/usr/share/btrbck` and create a shell wrapper under `/usr/bin`
-to start it.
+BTRBCK is distributed as debian package or as executable jar. Releases can be found under https://github.com/ruediste1/btrbck/releases.
+Install the package using
 
+    wget https://github.com/ruediste1/btrbck/releases/download/0.9/btrbck-cli_1.0.SNAPSHOT_all.deb && sudo dpkg -i btrbck-cli_1.0.SNAPSHOT_all.deb
+    
+    wget https://github.com/ruediste1/btrbck/releases/download/1.0/btrbck-cli_1.0_all.deb && sudo dpkg -i btrbck-cli_1.0_all.deb
+
+Now you can create your first stream repository. First, open a root shell
+
+    sudo su
+    
+Create an empty directory on a BTRFS file system and run
+
+    btrbck create -a
+
+Followed by
+
+    btrbck create myStream
+
+to create your first stream. This created a `myStream` directory in the repository. Create a file and take a snapshot:
+
+    echo "Hello" > myStream/world.txt
+    btrbck snapshot myStream
+    
+Running `find .` you can see the working directory and the snapshot which has been taken. Delete the file and take a snapshot again
+
+    rm myStream/world.txt
+    btrbck snapshot myStream
+    
+Now, you can restore the file using
+
+    btrbck restore myStream 0
+
+To conclude this section, setup BTRBCK on a second system. Create a stream repository and setup ssh with public key authentication
+for the root user. Then run 
+    
+    btrbck push myStream root@<host> <remote repo path>
+    
+This will transfer all snapshots to the remote host.
+ 
