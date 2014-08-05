@@ -205,6 +205,23 @@ list is traversed from left to right. The first match decides if the
 stream is in the set of synced streams or not. If no pattern matches, the
 stream is not included in the set of synced streams.
 
+## License
+
+    Copyright (C) 2014 Ruedi Steinmann
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
 ## Development
 The unit tests expect `/data/tmp` to reside on a btrfs file system. Due to a bug in `btrfs-tools`, the root of the file system has 
 to be mounted directly. Subvolume mounts do not work for send/receive.
