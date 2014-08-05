@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElementRef;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -33,6 +34,9 @@ public class VersionHistory implements Serializable {
 		}
 
 	}
+
+	@XmlAttribute
+	private final int version = 1;
 
 	@XmlElementRef
 	final ArrayList<VersionHistoryEntry> entries = new ArrayList<>();

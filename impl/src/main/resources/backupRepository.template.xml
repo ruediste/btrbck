@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<backupStreamRepository>
+<backupStreamRepository version="1">
 
 <!-- The following is a sample sync configuration -->
   <!--  <syncConfiguration 

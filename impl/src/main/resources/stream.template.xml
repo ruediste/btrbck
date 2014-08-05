@@ -7,7 +7,7 @@
    defines how often the process command will create a snapshot
    sample: PT10M
   -->
- <stream initialRetentionPeriod="" snapshotInterval="">
+ <stream initialRetentionPeriod="" snapshotInterval="" version="1">
    <!--
    A retention describes for how long snapshots are kept
    period
