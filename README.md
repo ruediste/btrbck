@@ -50,8 +50,6 @@ on the server and sync them to the backup host.
 BTRBCK is distributed as debian package or as executable jar. Releases can be found under https://github.com/ruediste1/btrbck/releases.
 Install the package using
 
-    wget https://github.com/ruediste1/btrbck/releases/download/0.9/btrbck-cli_1.0.SNAPSHOT_all.deb && sudo dpkg -i btrbck-cli_1.0.SNAPSHOT_all.deb
-    
     wget https://github.com/ruediste1/btrbck/releases/download/1.0/btrbck-cli_1.0_all.deb && sudo dpkg -i btrbck-cli_1.0_all.deb
 
 Now you can create your first stream repository. First, open a root shell
@@ -126,18 +124,50 @@ the configuration for the example above:
 
     <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <stream initialRetentionPeriod="PT1H" snapshotInterval="PT10M">
-      <retention period="P1D" timeUnit="HOUR" snapshotsPerTimeUnit="1"/>
-      <retention period="P1W" timeUnit="DAY" snapshotsPerTimeUnit="4"/>
-      <retention period="P1M" timeUnit="WEEK" snapshotsPerTimeUnit="1"/>
-      <retention period="P1Y" timeUnit="MONTH" snapshotsPerTimeUnit="1"/>
-      <retention period="P10Y" timeUnit="YEAR" snapshotsPerTimeUnit="1"/>
+      <retention period="P1D"   timeUnit="HOUR"   snapshotsPerTimeUnit="1"/>
+      <retention period="P1W"   timeUnit="DAY"    snapshotsPerTimeUnit="4"/>
+      <retention period="P1M"   timeUnit="WEEK"   snapshotsPerTimeUnit="1"/>
+      <retention period="P1Y"   timeUnit="MONTH"  snapshotsPerTimeUnit="1"/>
+      <retention period="P10Y"  timeUnit="YEAR"   snapshotsPerTimeUnit="1"/>
       <retention period="P100Y" timeUnit="DECADE" snapshotsPerTimeUnit="1"/>
     </stream>
 
 The `snapshotIterval` will be discussed below. All Periods are specified according to [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601).
 Basically, the format is `PnYnMnDTnHnMnS`, where zeros can be omitted and the `T` is used to indicate the start of the time part.
 
+For each retention, the beginning of the `period` is determined and truncated to the last start of `timeUnit`. Then 
+`snapshotsPerTimeUnit` instants are evenly distributed over the time unit. For each instant, the next snapshot after the instant
+is marked to be retained. This is repeated for all time units within the period. Afterwards, all snapshots not marked for
+retention are deleted. These operations are performed in the UTC time zone.
+
+To perform the pruning, run `btrbck prune` to prune all streams, or `btrbck prune <stream name>` to prune a single stream.
 If neither initialRetentionPeriod nor any retentions are defined, no snapshots are pruned.
+
+## Snapshot Transfer
+Snapshots can be transferred in an incremental manner between snapshot repositories, which are typically on different systems. For
+the transfer, SSH is used. The BTRBCK tool initiates an SSH connection to the remote host and starts the btrbck tool. The data
+is then transferred via stdin and stdout.
+
+For this to work, there may be no password prompts. For SSH, this can be accomplished by using public key authentication. To run 
+the BTRBK tool, this can be accomplished as outlined in the getting started section.
+
+Snapshots are trasferred using the `btrbck push` or `btrbck pull` commands. By using the `-c` switch, streams are created in the
+target repository if they do not exist. At this point, the stream configuration is copied. After that, the stream configuration
+is never touched again. Thus, modifications to the snapshot retentions are not synchronized automatically. This is intentional, to
+protect you from loosing snapshots due to a single misconfiguration. 
+
+If the same stream is copied to multiple application stream repositories, working on both and transferring the snapshots to a 
+single backup repository would result in a big mess. This is addressed by the stream version history. Each copy of a stream gets
+its unique ID. Whenever snapshots are taken or restored, this is recorded in the history. Before snapshots are transferred it
+is checked if target stream is an ancestor of the source stream. If this is not the case, the snapshot transfer is rejected.
+
+For taking snapshots, the history only stores the stream ID and the number of times a snapshot has been taken. Thus, as long as
+you don't change the stream instance you are working with, the history remains very compact.  
+
+## Concurrency Control
+BTRBCK uses a per repository lock to control concurrent operations on a repository. This
+lock can be held manually using `btrbck lock`. When a repository is locked, all operations
+wait for the lock before continuing.
 
 ## Automatic Processing
 BTRBCK has been prepared to operate in a fully automatic manner. This is enabled by adding a cron job running the `btrbck process` command.

@@ -7,10 +7,18 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.google.common.base.Objects;
 
+/**
+ * Entry in the {@link VersionHistory} recording that a snapshot has been taken.
+ * The entry can represent multiple snapshots, as long as they are taken from
+ * the same stream (by {@link Stream#id})
+ */
 @XmlRootElement(name = "snapshot")
 public class SnapshotVersionHistoryEntry extends VersionHistoryEntry {
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Number of snapshots this entry represents
+	 */
 	@XmlAttribute
 	public int count = 1;
 

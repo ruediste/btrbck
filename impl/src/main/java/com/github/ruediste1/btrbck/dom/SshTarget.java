@@ -5,6 +5,9 @@ import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
 
+/**
+ * Describes the target of an ssh connection
+ */
 public class SshTarget {
 	private Integer port;
 	private String host;
@@ -15,7 +18,7 @@ public class SshTarget {
 
 	/**
 	 * Create a new {@link SshTarget} by parsing the given string. the format is
-	 *
+	 * 
 	 * <pre>
 	 * {@code
 	 * [<user>@]<host>[:<port>]

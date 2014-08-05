@@ -8,6 +8,9 @@ import org.joda.time.format.PeriodFormatter;
 
 import com.google.common.base.Strings;
 
+/**
+ * Adapter to store joda time {@link Period}s in XML as ISO 8601 strings.
+ */
 public class PeriodAdapter extends XmlAdapter<String, Period> {
 
 	PeriodFormatter formatter = ISOPeriodFormat.standard();

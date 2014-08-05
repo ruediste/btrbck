@@ -16,25 +16,47 @@ import org.joda.time.Period;
 
 import com.google.common.base.Objects;
 
+/**
+ * Represents a stream of snaphots. Streams live in a {@link StreamRepository}.
+ */
 @XmlRootElement
 public class Stream {
 
+	/**
+	 * Unique ID of the stream
+	 */
 	@XmlTransient
 	public UUID id;
 
+	/**
+	 * Name of the stream
+	 */
 	@XmlTransient
 	public String name;
 
+	/**
+	 * Period during which all snapshots are retained
+	 */
 	@XmlAttribute
 	@XmlJavaTypeAdapter(PeriodAdapter.class)
 	public Period initialRetentionPeriod;
 
+	/**
+	 * {@link StreamRepository} this stream is part of
+	 */
 	@XmlTransient
 	public StreamRepository streamRepository;
 
+	/**
+	 * History of {@link Snapshot}s and restore operations which were made in
+	 * this stream
+	 */
 	@XmlTransient
 	public VersionHistory versionHistory;
 
+	/**
+	 * The interval at which to create automatic snaphots
+	 */
 	@XmlAttribute
 	@XmlJavaTypeAdapter(PeriodAdapter.class)
 	public Period snapshotInterval;

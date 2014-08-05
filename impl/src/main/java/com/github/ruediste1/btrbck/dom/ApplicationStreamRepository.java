@@ -4,6 +4,10 @@ import java.nio.file.Path;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+/**
+ * Represents a {@link Stream} repository with a working directory, suitable to
+ * run applications.
+ */
 @XmlRootElement
 public class ApplicationStreamRepository extends StreamRepository {
 

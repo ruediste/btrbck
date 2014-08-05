@@ -6,6 +6,9 @@ import java.util.Comparator;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
+/**
+ * Represents a snapshot of the working directory of a {@link Stream}.
+ */
 public class Snapshot {
 	public static final Comparator<Snapshot> COMPARATOR_NR = new Comparator<Snapshot>() {
 
@@ -15,8 +18,20 @@ public class Snapshot {
 		}
 	};
 
+	/**
+	 * Number of the snapshot. The next snapshot number is determined by the
+	 * length of the {@link VersionHistory} of the {@link Stream}
+	 */
 	public int nr;
+
+	/**
+	 * Instant the snapshot has been taken
+	 */
 	public DateTime date;
+
+	/**
+	 * {@link Stream} the snapshot belongs to
+	 */
 	public Stream stream;
 
 	public Snapshot() {

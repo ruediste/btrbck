@@ -13,14 +13,14 @@ import org.joda.time.Period;
 
 /**
  * Describes a set of {@link Snapshot}s that should be retained.
- *
+ * 
  * <p>
  * The {@link #period} defines how far back from now the snapshots are to be
  * retained. During this time, {@link #snapshotsPerTimeUnit} snapshots should be
  * retained per {@link #timeUnit}. The snapshots should be evenly distributed
  * within the time unit.
  * </p>
- *
+ * 
  * <p>
  * The {@link Retention} defines a set of instants for which snapshots should
  * ideally be retained. Since there is usually no snapshot at this precise
@@ -50,6 +50,10 @@ public class Retention {
 	@XmlAttribute
 	public int snapshotsPerTimeUnit;
 
+	/**
+	 * Calculate the instants a snapshot should be retained for, given the
+	 * current time.
+	 */
 	public Set<DateTime> retentionTimes(DateTime now) {
 		HashSet<DateTime> result = new HashSet<>();
 		Interval interval = new Interval(now.minus(period), now);
