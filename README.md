@@ -209,3 +209,6 @@ stream is not included in the set of synced streams.
 The unit tests expect `/data/tmp` to reside on a btrfs file system. Due to a bug in `btrfs-tools`, the root of the file system has 
 to be mounted directly. Subvolume mounts do not work for send/receive.
 
+Class Diagram
+![Class Diagram](doc/backupClasses.png)
+

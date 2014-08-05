@@ -1,16 +1,16 @@
-.PHONY: clean
+.PHONY: diagrams all
 
-index.html: src/*.md $(patsubst %.uml,%.png,$(wildcard src/*.uml))
-	cd src && \
+all: diagrams ../README.html
+
+diagrams: $(patsubst %.uml,%.png,$(wildcard *.uml))
+
+../README.html: ../README.md
+	cd .. && \
 	pandoc -S -s \
-	-f markdown_github+pandoc_title_block+implicit_header_references+auto_identifiers\
-	+multiline_tables \
-	--chapters --self-contained --toc -t html -o ../index.html \
+	-f markdown_github \
+	--self-contained --toc -t html -o README.html \
 	--default-image-extension=png  \
-	backup.md \
+	README.md 
 
-clean: 
-	rm -f src/*.png
-	
 %.png: %.uml
 	java -jar plantuml.jar $<

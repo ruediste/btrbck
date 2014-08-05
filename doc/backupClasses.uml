@@ -56,24 +56,12 @@ Stream --> "1" PeriodicInstant: "snapshot instants"
 Stream --> "*" Snapshot
 Stream --> "*" Retention
 
-class RemoteRepository {
-	name: String
-	location: String
-}
-
-class StreamSet {
-	includeAll: boolean
-	included: Set<Stream>
-	excluded: Set<Stream>
-	
-	getStreams(): List<Stream>
-}
-
 class SyncConfiguration {
+  patterns: String
+  sshTarget: String
+  remoteRepositoryLocation: String
+  remoteStreamName: String
 }
-SyncConfiguration --> StreamSet
-SyncConfiguration --> PeriodicInstant: "sync time"
-SyncConfiguration --> "1" RemoteRepository
 
 class StreamRepository {
 	name: String
@@ -82,7 +70,6 @@ class StreamRepository {
 }
 StreamRepository --> "*" Stream
 StreamRepository --> "*" SyncConfiguration
-StreamRepository --> "*" RemoteRepository
 
 class BackupStreamRepository {
 }
