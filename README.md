@@ -218,11 +218,11 @@ It will adjust all pom versions, parent versions and dependency versions in a mu
 
 If you made a mistake, do
 
-   mvn versions:revert
+    mvn versions:revert
    
 afterwards, or
 
-   mvn versions:commit
+    mvn versions:commit
    
 if you're happy with the results.
 
