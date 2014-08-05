@@ -226,10 +226,10 @@ afterwards, or
    
 if you're happy with the results.
 
-The version will automatically be reflected in `btrbck version`. Upload the
-generated `cli/target/btrbck-cli-xxx.jar` and `cli/target/btrbck-cli_xxx.deb`.
+The version will automatically be reflected in `btrbck version`. 
 
-Adjust the version in the download command of the getting started section.
+Manually adjust the version in the download command of the getting started section 
+and the `cli/btrbck` shell script.
 
 ### Class Diagram
 
