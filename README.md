@@ -209,6 +209,29 @@ stream is not included in the set of synced streams.
 The unit tests expect `/data/tmp` to reside on a btrfs file system. Due to a bug in `btrfs-tools`, the root of the file system has 
 to be mounted directly. Subvolume mounts do not work for send/receive.
 
-Class Diagram
+### Releasing
+To update the version, use versions:set from the versions-maven plugin:
+
+    mvn versions:set -DnewVersion=2.50.1-SNAPSHOT
+
+It will adjust all pom versions, parent versions and dependency versions in a multi-module project.
+
+If you made a mistake, do
+
+   mvn versions:revert
+   
+afterwards, or
+
+   mvn versions:commit
+   
+if you're happy with the results.
+
+The version will automatically be reflected in `btrbck version`. Upload the
+generated `cli/target/btrbck-cli-xxx.jar` and `cli/target/btrbck-cli_xxx.deb`.
+
+Adjust the version in the download command of the getting started section.
+
+### Class Diagram
+
 ![Class Diagram](doc/backupClasses.png)
 

@@ -11,6 +11,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -148,6 +149,8 @@ public class CliMain {
 				cmdSendSnapshots();
 			} else if ("lock".equals(command)) {
 				cmdLock();
+			} else if ("version".equals(command)) {
+				cmdVersion();
 			} else {
 				throw new DisplayException("Unknown command " + command);
 			}
@@ -156,6 +159,18 @@ public class CliMain {
 				repositoryLock.release();
 			}
 		}
+	}
+
+	private void cmdVersion() {
+		Properties properties = new Properties();
+		try {
+			properties.load(getClass()
+					.getResourceAsStream("version.properties"));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		System.out.println("BTRBCK version "
+				+ properties.getProperty("btrbck.version"));
 	}
 
 	private void cmdLock() {
