@@ -3,7 +3,7 @@
 
 <!-- The following is a sample sync configuration -->
   <!--  <syncConfiguration 
-    direction="PULL" 
+    direction="PUSH" 
     sshTarget="user@host:port" 
     remoteRepoLocation="/backup" 
     createRemoteIfNecessary="true" 
