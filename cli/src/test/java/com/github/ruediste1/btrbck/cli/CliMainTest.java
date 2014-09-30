@@ -2,6 +2,7 @@ package com.github.ruediste1.btrbck.cli;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;
@@ -44,8 +45,7 @@ public class CliMainTest extends CliTestBase {
 	}
 
 	@Before
-	public void setup() {
-	}
+	public void setup() {}
 
 	CliMain main() {
 		CliMain main = new CliMain();
@@ -62,7 +62,8 @@ public class CliMainTest extends CliTestBase {
 				streamService.deleteStreams(repo);
 				streamRepositoryService.deleteEmptyRepository(repo);
 				Files.delete(p);
-			} catch (Throwable t) {
+			}
+			catch (Throwable t) {
 				System.err.println("Error while removing repository: " + t);
 			}
 		}
@@ -176,7 +177,9 @@ public class CliMainTest extends CliTestBase {
 		assertThat(streamService.getSnapshots(stream).isEmpty(), is(true));
 		main().processCommand("-r", location.toAbsolutePath().toString(),
 				"-sudo", "snapshot", "test");
+
 		assertThat(streamService.getSnapshots(stream).isEmpty(), is(false));
+		assertNull(streamService.getSnapshots(stream).get(0).senderStreamId);
 	}
 
 	@Test(expected = DisplayException.class)

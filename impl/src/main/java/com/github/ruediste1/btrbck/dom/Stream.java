@@ -88,6 +88,10 @@ public class Stream {
 		return getStreamMetaDirectory().resolve("versions.xml");
 	}
 
+	public Path getSnapshotSenderIdFile(String snapshotName) {
+		return getSnapshotsDir().resolve(snapshotName + ".senderId");
+	}
+
 	@Override
 	public String toString() {
 		return Objects.toStringHelper(this).add("id", id).add("name", name)

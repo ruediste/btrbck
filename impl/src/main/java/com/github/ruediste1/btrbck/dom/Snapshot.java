@@ -2,6 +2,7 @@ package com.github.ruediste1.btrbck.dom;
 
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.UUID;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
@@ -34,8 +35,9 @@ public class Snapshot {
 	 */
 	public Stream stream;
 
-	public Snapshot() {
-	}
+	public UUID senderStreamId;
+
+	public Snapshot() {}
 
 	public Snapshot(int nr, DateTime date, Stream stream) {
 		super();

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -20,6 +21,7 @@ import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.VersionHistory;
 import com.github.ruediste1.btrbck.dom.VersionHistory.HistoryNode;
 import com.github.ruediste1.btrbck.dto.StreamState;
+import com.google.common.base.Objects;
 
 @Singleton
 public class SyncService {
@@ -36,12 +38,20 @@ public class SyncService {
 
 	/**
 	 * Create a {@link StreamState} for a stream
-	 * 
+	 *
+	 * @param senderStreamId
+	 *
 	 * @param isNew
 	 */
-	public StreamState calculateStreamState(Stream stream, boolean isNew) {
+	public StreamState calculateStreamState(Stream stream, UUID senderStreamId,
+			boolean isNew) {
 		StreamState result = new StreamState();
 		result.isNewStream = isNew;
+		for (Snapshot sn : streamService.getSnapshots(stream).values()) {
+			if (Objects.equal(senderStreamId, sn.senderStreamId)) {
+				result.availableSnapshotNumbers.add(sn.nr);
+			}
+		}
 		result.availableSnapshotNumbers.addAll(streamService.getSnapshots(
 				stream).keySet());
 		return result;

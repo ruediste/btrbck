@@ -7,6 +7,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,14 +51,14 @@ import com.github.ruediste1.btrbck.dto.StreamState;
 
 /**
  * Service managing the transfer of snapshots between repositories.
- * 
+ *
  * <p>
  * <strong> Pull Snapshots from Remote </strong> <br/>
  * </p>
  * <p>
  * <img src="doc-files/pullSeq.png"/>
  * </p>
- * 
+ *
  * <p>
  * <strong> Push Snapshots to Remote </strong> <br/>
  * </p>
@@ -90,7 +91,7 @@ public class SnapshotTransferService {
 	/**
 	 * Send the {@link #READY_INDICATOR}, wait for the {@link #START_COMMAND},
 	 * send the available snapshots and read the missing snapshots
-	 * 
+	 *
 	 * <p>
 	 * <img src="doc-files/pushSeq.png"/>
 	 * </p>
@@ -112,19 +113,31 @@ public class SnapshotTransferService {
 				stream = streamService.createStream(repo, streamName);
 				isNew = true;
 			}
+			log.debug("send ready");
 			Util.send(READY_INDICATOR, output);
+			log.debug("wait for start");
 			Util.waitFor(START_COMMAND, input);
 
+			// read sender stream uid
+			log.debug("read sender stream id");
+			UUID senderStreamId = Util.read(UUID.class, input);
+
 			// send available snapshots
-			Util.send(syncService.calculateStreamState(stream, isNew), output);
+			log.debug("send available snapshots");
+			Util.send(syncService.calculateStreamState(stream, senderStreamId,
+					isNew), output);
 
 			// receive missing snapshots
-			receiveMissingSnapshots(stream, isNew, input);
-		} catch (UnsupportedEncodingException e) {
+			log.debug("receive missing snapshots");
+			receiveMissingSnapshots(stream, isNew, input, senderStreamId);
+		}
+		catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
-		} catch (DisplayException e) {
+		}
+		catch (DisplayException e) {
 			throw e;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException("Error while receiving snapshots", e);
 
 		}
@@ -143,18 +156,25 @@ public class SnapshotTransferService {
 			Stream stream = streamService.readStream(repo, streamName);
 
 			// send ready
+			log.debug("send ready");
 			Util.send(READY_INDICATOR, output);
+			log.debug("send stream id");
+			Util.send(stream.id, output);
 
 			// read available snapshots
+			log.debug("read available snapshots");
 			StreamState streamState = Util.read(StreamState.class, input);
 
 			// send missing snapshots
+			log.debug("send missing snapshots");
 			sendMissingSnapshots(stream, streamState, output);
 
-		} catch (UnsupportedEncodingException e) {
+		}
+		catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException("Error while sending snapshots", e);
 
 		}
@@ -177,21 +197,29 @@ public class SnapshotTransferService {
 			OutputStream output = process.getOutputStream();
 
 			// wait for the ready signal
+			log.debug("wait for ready");
 			Util.waitFor(READY_INDICATOR, input);
 
 			// send the start command
+			log.debug("send start");
 			Util.send(START_COMMAND, output);
+			log.debug("send stream id");
+			Util.send(stream.id, output);
 
 			// read available snapshots
+			log.debug("read available snapshots");
 			StreamState streamState = Util.read(StreamState.class, input);
 
 			// send missing snapshots
+			log.debug("send missing snapshots");
 			sendMissingSnapshots(stream, streamState, output);
 
 			process.close();
-		} catch (DisplayException e) {
+		}
+		catch (DisplayException e) {
 			throw e;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException(e);
 
 		}
@@ -200,10 +228,6 @@ public class SnapshotTransferService {
 	/**
 	 * Open a ssh connection to the target, start the btrbck tool, send it the
 	 * available snapshots and read the missing snapshots.
-	 * 
-	 * @param stream
-	 *            the stream to pull into, or null if a new stream is to be
-	 *            created
 	 */
 	public void pull(StreamRepository localRepo, String localStreamName,
 			RemoteRepository remoteRepo, String remoteStreamName,
@@ -228,18 +252,26 @@ public class SnapshotTransferService {
 			InputStream input = connection.getInputStream();
 
 			// wait for the ready signal
+			log.debug("wait for ready");
 			Util.waitFor(READY_INDICATOR, input);
+
+			// read sender stream uid
+			log.debug("read stream id");
+			UUID senderStreamId = Util.read(UUID.class, input);
 
 			// send available snapshots
 			StreamState streamState = syncService.calculateStreamState(stream,
-					isNewStream);
+					senderStreamId, isNewStream);
+			log.debug("send available snapshots");
 			Util.send(streamState, connection.getOutputStream());
 
 			// process incoming snapshots
-			receiveMissingSnapshots(stream, isNewStream, input);
+			log.debug("receive missing snapshots");
+			receiveMissingSnapshots(stream, isNewStream, input, senderStreamId);
 
 			connection.close();
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException(
 					"Error while pulling from remote respository", e);
 
@@ -247,7 +279,8 @@ public class SnapshotTransferService {
 	}
 
 	void receiveMissingSnapshots(Stream stream, boolean isNew,
-			final InputStream input) throws ClassNotFoundException, IOException {
+			final InputStream input, UUID senderStreamId)
+					throws ClassNotFoundException, IOException {
 		streamService.clearReceiveTempDir(stream);
 		SendFileListHeader header = Util.read(SendFileListHeader.class, input);
 
@@ -271,16 +304,21 @@ public class SnapshotTransferService {
 			btrfsService.receive(stream.getReceiveTempDir(),
 					new Consumer<OutputStream>() {
 
-						@Override
-						public void consume(OutputStream value) {
-							try {
-								blockTransferService.readBlocks(input, value);
-								value.close();
-							} catch (ClassNotFoundException | IOException e) {
-								throw new RuntimeException(e);
-							}
-						}
-					});
+				@Override
+				public void consume(OutputStream value) {
+					try {
+						blockTransferService.readBlocks(input, value);
+						value.close();
+					}
+							catch (ClassNotFoundException | IOException e) {
+						throw new RuntimeException(e);
+					}
+				}
+			});
+
+			// set sender stream id
+			Files.write(stream.getSnapshotSenderIdFile(sendFile.snapshotName),
+					senderStreamId.toString().getBytes("UTF-8"));
 
 			// move to final destination
 			Path tmpSnapshot = stream.getReceiveTempDir().resolve(
@@ -290,6 +328,7 @@ public class SnapshotTransferService {
 					true);
 
 			btrfsService.deleteSubVolume(tmpSnapshot);
+
 		}
 	}
 
@@ -333,7 +372,8 @@ public class SnapshotTransferService {
 					try {
 						blockTransferService.sendBlocks(value, output,
 								1024 * 1024);
-					} catch (IOException e) {
+					}
+					catch (IOException e) {
 						throw new RuntimeException(
 								"Error while sending snapshot", e);
 					}

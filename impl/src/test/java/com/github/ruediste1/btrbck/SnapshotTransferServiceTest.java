@@ -3,6 +3,7 @@ package com.github.ruediste1.btrbck;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;
@@ -117,7 +118,8 @@ public class SnapshotTransferServiceTest extends TestBase {
 
 						operation.run(remoteRepo, remoteStreamName,
 								threadInput, threadOutput);
-					} catch (Throwable t) {
+					}
+					catch (Throwable t) {
 						System.err.println("Error in threaded operation");
 						System.err.println(t.getMessage());
 						t.printStackTrace();
@@ -143,13 +145,16 @@ public class SnapshotTransferServiceTest extends TestBase {
 					// threadInput.close();
 					try {
 						future.get();
-					} catch (ExecutionException e) {
+					}
+					catch (ExecutionException e) {
 						try {
 							throw e.getCause();
-						} catch (DisplayException e1) {
+						}
+						catch (DisplayException e1) {
 							throw e1;
 
-						} catch (Throwable e1) {
+						}
+						catch (Throwable e1) {
 							throw new RuntimeException(e1);
 						}
 					}
@@ -181,7 +186,7 @@ public class SnapshotTransferServiceTest extends TestBase {
 	}
 
 	@Test
-	public void transferSnapshot() throws Exception {
+	public void transferSnapshotPush() throws Exception {
 		Stream stream = streamService.createStream(repo1, "test");
 		Stream targetStream = streamService.createStream(repo2, "test2");
 
@@ -196,6 +201,31 @@ public class SnapshotTransferServiceTest extends TestBase {
 				snapshot.getSnapshotName());
 		assertThat(Files.exists(snapshotDir), is(true));
 		assertThat(Files.exists(snapshotDir.resolve("test.txt")), is(true));
+		assertEquals(stream.id,
+				streamService.getSnapshots(targetStream).get(0).senderStreamId);
+	}
+
+	@Test
+	public void transferSnapshotPull() throws Exception {
+		transferService.sshService = new SshServiceTestDouble(repo1);
+		transferService.sshService.setSudoRemoteBtrfs(true);
+
+		Stream stream = streamService.createStream(repo1, "test");
+		Stream targetStream = streamService.createStream(repo2, "test2");
+
+		Path testFile = repo1.getWorkingDirectory(stream).resolve("test.txt");
+		Files.copy(new ByteArrayInputStream("Hello".getBytes("UTF-8")),
+				testFile);
+		Snapshot snapshot = streamService.takeSnapshot(stream);
+		transferService.pull(repo2, "test2", null, "test", false);
+
+		assertThat(targetStream, not(nullValue()));
+		Path snapshotDir = targetStream.getSnapshotsDir().resolve(
+				snapshot.getSnapshotName());
+		assertThat(Files.exists(snapshotDir), is(true));
+		assertThat(Files.exists(snapshotDir.resolve("test.txt")), is(true));
+		assertEquals(stream.id,
+				streamService.getSnapshots(targetStream).get(0).senderStreamId);
 	}
 
 	@Test

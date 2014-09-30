@@ -35,7 +35,7 @@ import com.github.ruediste1.btrbck.dom.VersionHistory;
 
 /**
  * Provides operations on {@link Stream}s
- * 
+ *
  */
 @Singleton
 public class StreamService {
@@ -75,7 +75,8 @@ public class StreamService {
 		try {
 			readStream = (Stream) ctx.createUnmarshaller().unmarshal(
 					s.getStreamConfigFile().toFile());
-		} catch (JAXBException e) {
+		}
+		catch (JAXBException e) {
 			throw new RuntimeException(
 					"Error while reading stream config file", e);
 		}
@@ -87,7 +88,8 @@ public class StreamService {
 		try {
 			readStream.id = UUID.fromString(new String(Files
 					.readAllBytes(readStream.getStreamUuidFile()), "UTF-8"));
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException("Error while reading stream id file", e);
 
 		}
@@ -97,7 +99,8 @@ public class StreamService {
 			log.debug("reading version history from " + historyFile);
 			readStream.versionHistory = (VersionHistory) ctx
 					.createUnmarshaller().unmarshal(historyFile);
-		} catch (JAXBException e) {
+		}
+		catch (JAXBException e) {
 			throw new RuntimeException("Error while reading version history", e);
 		}
 
@@ -147,7 +150,8 @@ public class StreamService {
 		try {
 			ctx.createMarshaller().marshal(stream.versionHistory,
 					stream.getVersionHistoryFile().toFile());
-		} catch (JAXBException e) {
+		}
+		catch (JAXBException e) {
 			throw new RuntimeException("Error while writing stream", e);
 		}
 	}
@@ -198,6 +202,18 @@ public class StreamService {
 		TreeMap<Integer, Snapshot> result = new TreeMap<>();
 		for (String name : Util.getDirectoryNames(stream.getSnapshotsDir())) {
 			Snapshot snapshot = Snapshot.parse(stream, name);
+
+			// read sender id if exists
+			if (Files.exists(stream.getSnapshotSenderIdFile(name))) {
+				try {
+					snapshot.senderStreamId = UUID.fromString(new String(Files
+							.readAllBytes(stream.getSnapshotSenderIdFile(name)),
+							"UTF-8"));
+				}
+				catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
 			result.put(snapshot.nr, snapshot);
 		}
 		return result;
@@ -210,7 +226,7 @@ public class StreamService {
 							+ stream.name
 							+ " in non-application stream repository "
 							+ stream.streamRepository.rootDirectory
-									.toAbsolutePath());
+							.toAbsolutePath());
 		}
 		ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
 
@@ -232,7 +248,7 @@ public class StreamService {
 		if (snapshots.isEmpty()) {
 			throw new DisplayException(
 					"Cannot restore latest snapshot. Stream " + stream.name
-							+ " does not contain any snapshots");
+					+ " does not contain any snapshots");
 		}
 		restoreSnapshot(stream, Collections.max(snapshots.keySet()));
 	}
@@ -250,14 +266,14 @@ public class StreamService {
 
 	/**
 	 * Restore a snapshot.
-	 * 
+	 *
 	 * The following list outlines the steps taken:
 	 * <ol>
 	 * <li>delete working directory</li>
 	 * <li>update version file</li>
 	 * <li>restore working directory</li>
 	 * </ol>
-	 * 
+	 *
 	 * If the process is aborted at any stage (power loss), the command can
 	 * simply be executed again.
 	 */
