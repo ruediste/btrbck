@@ -21,6 +21,7 @@ import com.github.ruediste1.btrbck.dom.Stream;
 import com.github.ruediste1.btrbck.dom.VersionHistory;
 import com.github.ruediste1.btrbck.dom.VersionHistory.HistoryNode;
 import com.github.ruediste1.btrbck.dto.StreamState;
+import com.github.ruediste1.btrbck.dto.StreamState.SnapshotEntry;
 import com.google.common.base.Objects;
 
 @Singleton
@@ -44,22 +45,16 @@ public class SyncService {
 
 	/**
 	 * Create a {@link StreamState} for a stream
-	 *
-	 * @param senderStreamId
-	 *
+	 * 
 	 * @param isNew
 	 */
-	public StreamState calculateStreamState(Stream stream, UUID senderStreamId,
-			boolean isNew) {
+	public StreamState calculateStreamState(Stream stream, boolean isNew) {
 		StreamState result = new StreamState();
 		result.isNewStream = isNew;
 		for (Snapshot sn : streamService.getSnapshots(stream).values()) {
-			if (Objects.equal(senderStreamId, sn.senderStreamId)) {
-				result.availableSnapshotNumbers.add(sn.nr);
-			}
+			result.availableSnapshots.add(new SnapshotEntry(sn));
 		}
-		result.availableSnapshotNumbers.addAll(streamService.getSnapshots(
-				stream).keySet());
+
 		return result;
 	}
 
@@ -73,28 +68,29 @@ public class SyncService {
 				.getSnapshots(sourceStream);
 		VersionHistory versionHistory = sourceStream.versionHistory;
 
-		Set<Integer> availableSnapshotNumbers;
+		Set<SnapshotEntry> availableSnapshotNumbers;
 		if (stateOfTarget == null) {
 			availableSnapshotNumbers = Collections.emptySet();
 		} else {
-			availableSnapshotNumbers = stateOfTarget.availableSnapshotNumbers;
+			availableSnapshotNumbers = stateOfTarget.availableSnapshots;
 		}
-		return determineSendFiles(sourceSnapshots, versionHistory,
-				availableSnapshotNumbers);
+		return determineSendFiles(sourceStream.id, sourceSnapshots,
+				versionHistory, availableSnapshotNumbers);
 	}
 
-	List<SendFileSpec> determineSendFiles(
+	List<SendFileSpec> determineSendFiles(UUID sourceStreamId,
 			TreeMap<Integer, Snapshot> sourceSnapshots,
-			VersionHistory versionHistory, Set<Integer> targetSnapshotNrs) {
+			VersionHistory versionHistory, Set<SnapshotEntry> availableSnapshots) {
 		// calculate the snapshots which are present in the source but missing
 		// on the target
 		List<Snapshot> missingSnapshots = calculateMissingSnapshots(
-				sourceSnapshots.values(), targetSnapshotNrs);
+				sourceSnapshots.values(), availableSnapshots);
 
 		TreeSet<Integer> availableCloneSources = new TreeSet<>();
-		for (int nr : targetSnapshotNrs) {
-			if (sourceSnapshots.containsKey(nr)) {
-				availableCloneSources.add(nr);
+		for (SnapshotEntry entry : availableSnapshots) {
+			if (sourceSnapshots.containsKey(entry.snapshotNr)
+					&& Objects.equal(entry.senderStreamId, sourceStreamId)) {
+				availableCloneSources.add(entry.snapshotNr);
 			}
 		}
 
@@ -137,7 +133,7 @@ public class SyncService {
 			TreeSet<Integer> availableCloneSources) {
 		Set<Integer> result = new HashSet<>();
 		TreeMap<Integer, HistoryNode> nodes = versionHistory.calculateNodes();
-		log.debug("Node Map: " + nodes);
+		// log.debug("Node Map: " + nodes);
 		HistoryNode node = nodes.get(snapshot.nr);
 
 		fillAvailableAncestors(node, result, availableCloneSources);
@@ -165,10 +161,15 @@ public class SyncService {
 	}
 
 	List<Snapshot> calculateMissingSnapshots(
-			Collection<Snapshot> sourceSnapshots, Set<Integer> targetSnapshotNrs) {
+			Collection<Snapshot> sourceSnapshots,
+			Set<SnapshotEntry> availableSnapshots) {
 		List<Snapshot> result = new ArrayList<>();
+		HashSet<Integer> availableSnapshotNrs = new HashSet<>();
+		for (SnapshotEntry e : availableSnapshots) {
+			availableSnapshotNrs.add(e.snapshotNr);
+		}
 		for (Snapshot s : sourceSnapshots) {
-			if (!targetSnapshotNrs.contains(s.nr)) {
+			if (!availableSnapshotNrs.contains(s.nr)) {
 				result.add(s);
 			}
 		}

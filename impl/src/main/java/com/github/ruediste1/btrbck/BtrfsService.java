@@ -80,7 +80,8 @@ public class BtrfsService {
 					throw new RuntimeException("chown exited with " + exitValue);
 				}
 			}
-		} catch (IOException | InterruptedException e) {
+		}
+		catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Error while creating sub volume in "
 					+ path, e);
 		}
@@ -115,7 +116,8 @@ public class BtrfsService {
 			if (exitValue != 0) {
 				throw new IOException("exit code: " + exitValue);
 			}
-		} catch (IOException | InterruptedException e) {
+		}
+		catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Error while deleting sub volume in "
 					+ path, e);
 		}
@@ -133,7 +135,8 @@ public class BtrfsService {
 			if (exitValue != 0) {
 				throw new IOException("exit code: " + exitValue);
 			}
-		} catch (IOException | InterruptedException e) {
+		}
+		catch (IOException | InterruptedException e) {
 			throw new RuntimeException(
 					"Error while receiving snapshot sub volume in "
 							+ destinationPath, e);
@@ -144,9 +147,17 @@ public class BtrfsService {
 		try {
 			LinkedList<String> args = new LinkedList<>();
 			args.addAll(Arrays.asList("btrfs", "send"));
-			for (Snapshot s : sendFile.cloneSources) {
-				args.add("-c");
-				args.add(s.getSnapshotDir().toAbsolutePath().toString());
+			{
+				boolean firstSource = true;
+				for (Snapshot s : sendFile.cloneSources) {
+					if (firstSource) {
+						args.add("-p");
+						firstSource = false;
+					} else {
+						args.add("-c");
+					}
+					args.add(s.getSnapshotDir().toAbsolutePath().toString());
+				}
 			}
 			args.add(sendFile.target.getSnapshotDir().toAbsolutePath()
 					.toString());
@@ -157,10 +168,10 @@ public class BtrfsService {
 			if (exitValue != 0) {
 				throw new IOException("exit code: " + exitValue);
 			}
-		} catch (IOException | InterruptedException e) {
+		}
+		catch (IOException | InterruptedException e) {
 			throw new RuntimeException(
-					"Error while receiving snapshot sub volume in " + sendFile,
-					e);
+					"Error while sending snapshot sub volume in " + sendFile, e);
 		}
 	}
 
@@ -187,7 +198,8 @@ public class BtrfsService {
 				}
 			}
 
-		} catch (IOException | InterruptedException e) {
+		}
+		catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Error while taking snapshot of  "
 					+ sourceVolume.toAbsolutePath() + " to "
 					+ target.toAbsolutePath(), e);

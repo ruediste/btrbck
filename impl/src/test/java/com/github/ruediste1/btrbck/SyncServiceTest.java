@@ -21,6 +21,7 @@ import org.junit.Test;
 import com.github.ruediste1.btrbck.SyncService.SendFileSpec;
 import com.github.ruediste1.btrbck.dom.Snapshot;
 import com.github.ruediste1.btrbck.dom.VersionHistory;
+import com.github.ruediste1.btrbck.dto.StreamState.SnapshotEntry;
 
 public class SyncServiceTest {
 
@@ -40,9 +41,9 @@ public class SyncServiceTest {
 		Snapshot snapshot3 = new Snapshot(3, null, null);
 		snapshots.add(snapshot3);
 
-		Set<Integer> snapshotNumbers = new HashSet<>();
-		snapshotNumbers.add(1);
-		snapshotNumbers.add(2);
+		Set<SnapshotEntry> snapshotNumbers = new HashSet<>();
+		snapshotNumbers.add(new SnapshotEntry(1, null));
+		snapshotNumbers.add(new SnapshotEntry(2, null));
 
 		List<Snapshot> missing = service.calculateMissingSnapshots(snapshots,
 				snapshotNumbers);
@@ -101,7 +102,7 @@ public class SyncServiceTest {
 	public void testDetermineSendFiles() {
 		VersionHistory versionHistory = new VersionHistory();
 		UUID id = UUID.randomUUID();
-		Set<Integer> targetSnapshots = new HashSet<>();
+		Set<SnapshotEntry> targetSnapshots = new HashSet<>();
 		TreeMap<Integer, Snapshot> sourceSnapshots = new TreeMap<>();
 
 		// snapshot 0 only persent in source
@@ -110,15 +111,15 @@ public class SyncServiceTest {
 
 		// snapshot 1 only persent in target
 		versionHistory.addVersion(id);
-		targetSnapshots.add(1);
+		targetSnapshots.add(new SnapshotEntry(1, null));
 
 		// snapshot 2 present in both
 		versionHistory.addVersion(id);
 		sourceSnapshots.put(2, new Snapshot(2, null, null));
-		targetSnapshots.add(2);
+		targetSnapshots.add(new SnapshotEntry(2, null));
 
-		List<SendFileSpec> specs = service.determineSendFiles(sourceSnapshots,
-				versionHistory, targetSnapshots);
+		List<SendFileSpec> specs = service.determineSendFiles(null,
+				sourceSnapshots, versionHistory, targetSnapshots);
 		assertThat(specs, hasSize(1));
 		assertThat(specs.get(0).target.nr, is(0));
 		assertThat(specs.get(0).cloneSources, hasSize(1));

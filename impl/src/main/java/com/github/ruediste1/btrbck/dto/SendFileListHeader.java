@@ -1,6 +1,7 @@
 package com.github.ruediste1.btrbck.dto;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 import com.github.ruediste1.btrbck.dom.VersionHistory;
 
@@ -11,4 +12,6 @@ public class SendFileListHeader implements Serializable {
 	public VersionHistory targetVersionHistory;
 	public byte[] streamConfiguration;
 	public int count;
+
+	public UUID senderStreamId;
 }
