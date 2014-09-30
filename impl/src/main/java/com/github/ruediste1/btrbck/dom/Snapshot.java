@@ -55,6 +55,11 @@ public class Snapshot {
 				date.toString(ISODateTimeFormat.dateTime()));
 	}
 
+	@Override
+	public String toString() {
+		return getSnapshotName();
+	}
+
 	public static Snapshot parse(Stream stream, String name) {
 		Snapshot snapshot = new Snapshot();
 		snapshot.stream = stream;

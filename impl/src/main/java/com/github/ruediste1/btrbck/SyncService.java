@@ -34,6 +34,12 @@ public class SyncService {
 	public static class SendFileSpec {
 		List<Snapshot> cloneSources = new ArrayList<>();
 		Snapshot target;
+
+		@Override
+		public String toString() {
+			return Objects.toStringHelper(this).add("sources", cloneSources)
+					.add("target", target).toString();
+		}
 	}
 
 	/**
