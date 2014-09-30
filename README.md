@@ -50,7 +50,7 @@ on the server and sync them to the backup host.
 BTRBCK is distributed as debian package or as executable jar. Releases can be found under https://github.com/ruediste1/btrbck/releases.
 Install the package using
 
-    wget https://github.com/ruediste1/btrbck/releases/download/1.0/btrbck-cli_2.0_all.deb && sudo dpkg -i btrbck-cli_2.0_all.deb
+    wget https://github.com/ruediste1/btrbck/releases/download/2.0/btrbck-cli_2.0_all.deb && sudo dpkg -i btrbck-cli_2.0_all.deb
 
 Now you can create your first stream repository. First, open a root shell
 
