@@ -35,7 +35,7 @@ import com.github.ruediste1.btrbck.dom.VersionHistory;
 
 /**
  * Provides operations on {@link Stream}s
- *
+ * 
  */
 @Singleton
 public class StreamService {
@@ -206,9 +206,9 @@ public class StreamService {
 			// read sender id if exists
 			if (Files.exists(stream.getSnapshotSenderIdFile(name))) {
 				try {
-					snapshot.senderStreamId = UUID.fromString(new String(Files
-							.readAllBytes(stream.getSnapshotSenderIdFile(name)),
-							"UTF-8"));
+					snapshot.senderStreamId = UUID.fromString(new String(
+							Files.readAllBytes(stream
+									.getSnapshotSenderIdFile(name)), "UTF-8"));
 				}
 				catch (IOException e) {
 					throw new RuntimeException(e);
@@ -226,7 +226,7 @@ public class StreamService {
 							+ stream.name
 							+ " in non-application stream repository "
 							+ stream.streamRepository.rootDirectory
-							.toAbsolutePath());
+									.toAbsolutePath());
 		}
 		ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
 
@@ -248,7 +248,7 @@ public class StreamService {
 		if (snapshots.isEmpty()) {
 			throw new DisplayException(
 					"Cannot restore latest snapshot. Stream " + stream.name
-					+ " does not contain any snapshots");
+							+ " does not contain any snapshots");
 		}
 		restoreSnapshot(stream, Collections.max(snapshots.keySet()));
 	}
@@ -266,14 +266,14 @@ public class StreamService {
 
 	/**
 	 * Restore a snapshot.
-	 *
+	 * 
 	 * The following list outlines the steps taken:
 	 * <ol>
 	 * <li>delete working directory</li>
 	 * <li>update version file</li>
 	 * <li>restore working directory</li>
 	 * </ol>
-	 *
+	 * 
 	 * If the process is aborted at any stage (power loss), the command can
 	 * simply be executed again.
 	 */
@@ -289,6 +289,13 @@ public class StreamService {
 	}
 
 	public void deleteSnapshot(Snapshot snapshot) {
+		try {
+			Files.deleteIfExists(snapshot.stream
+					.getSnapshotSenderIdFile(snapshot.getSnapshotName()));
+		}
+		catch (IOException e) {
+			throw new RuntimeException("error while deleting senderId file", e);
+		}
 		btrfsService.deleteSubVolume(snapshot.getSnapshotDir());
 	}
 
