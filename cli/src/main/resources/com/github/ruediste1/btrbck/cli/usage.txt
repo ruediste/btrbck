@@ -58,4 +58,4 @@ btrbck version
 btrbck lock
   Lock the repository. The program will wait for enter and then
   unlock the repository again. Useful to lock a repository while
-  changing it's configuration.
+  changing its configuration.

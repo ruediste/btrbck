@@ -317,7 +317,7 @@ public class CliMain {
 
 	private void cmdPush() {
 		if (arguments.size() < 4) {
-			throw new DisplayException("Not enought arguments");
+			throw new DisplayException("Not enough arguments");
 		}
 
 		if (arguments.size() > 5) {
