@@ -518,20 +518,21 @@ public class CliMain {
 
 	}
 
-	private StreamRepository readAndLockRepository() {
-		File path = repositoryLocation;
-		if (path == null) {
-			path = Paths.get("").toFile();
-		}
-		StreamRepository repo = streamRepositoryService.readRepository(path.toPath());
-		FileChannel f;
-		try {
-			f = FileChannel.open(repo.getRepositoryLockFile(),
-					StandardOpenOption.WRITE);
-			repositoryLock = f.lock(0L, Long.MAX_VALUE, false);
-		} catch (IOException e) {
-			throw new DisplayException("Unable to open lock file: "+repo.getRepositoryLockFile());
-		}
-		return repo;
-	}
+  private StreamRepository readAndLockRepository() {
+    File path = repositoryLocation;
+    if (path == null) {
+      path = Paths.get("").toFile();
+    }
+    StreamRepository repo = streamRepositoryService.readRepository(path.toPath());
+    FileChannel f;
+    try {
+      if (!repo.getRepositoryLockFile().toFile().exists())
+        throw new DisplayException("Lock file not found: is this a stream repository?");
+      f = FileChannel.open(repo.getRepositoryLockFile(),StandardOpenOption.WRITE);
+      repositoryLock = f.lock(0L, Long.MAX_VALUE, false);
+    } catch (IOException e) {
+      throw new RuntimeException("Error while locking repository", e);
+    }
+    return repo;
+  }
 }
