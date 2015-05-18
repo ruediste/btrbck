@@ -125,49 +125,51 @@ public class CliMain {
 			log.debug("Arguments: " + arguments);
 
 			String command = arguments.get(0);
-			if (null != command) switch (command) {
-        case "snapshot":
-          cmdSnapshot();
-          break;
-        case "list":
-          cmdList();
-          break;
-        case "push":
-          cmdPush();
-          break;
-        case "pull":
-          cmdPull();
-          break;
-        case "process":
-          cmdProcess();
-          break;
-        case "prune":
-          cmdPrune();
-          break;
-        case "create":
-          cmdCreate();
-          break;
-        case "delete":
-          cmdDelete();
-          break;
-        case "restore":
-          cmdRestore();
-          break;
-        case "receiveSnapshots":
-          cmdReceiveSnapshots();
-          break;
-        case "sendSnapshots":
-          cmdSendSnapshots();
-          break;
-        case "lock":
-          cmdLock();
-          break;
-        case "version":
-          cmdVersion();
-          break;
-        default:
-          throw new DisplayException("Unknown command " + command);
-      }
+			if (null != command) {
+				switch (command) {
+					case "snapshot":
+						cmdSnapshot();
+						break;
+					case "list":
+						cmdList();
+						break;
+					case "push":
+						cmdPush();
+						break;
+					case "pull":
+						cmdPull();
+						break;
+					case "process":
+						cmdProcess();
+						break;
+					case "prune":
+						cmdPrune();
+						break;
+					case "create":
+						cmdCreate();
+						break;
+					case "delete":
+						cmdDelete();
+						break;
+					case "restore":
+						cmdRestore();
+						break;
+					case "receiveSnapshots":
+						cmdReceiveSnapshots();
+						break;
+					case "sendSnapshots":
+						cmdSendSnapshots();
+						break;
+					case "lock":
+						cmdLock();
+						break;
+					case "version":
+						cmdVersion();
+						break;
+					default:
+						throw new DisplayException("Unknown command " + command);
+				}
+			}
 		} finally {
 			if (repositoryLock != null) {
 				repositoryLock.release();
@@ -518,21 +520,21 @@ public class CliMain {
 
 	}
 
-  private StreamRepository readAndLockRepository() {
-    File path = repositoryLocation;
-    if (path == null) {
-      path = Paths.get("").toFile();
-    }
-    StreamRepository repo = streamRepositoryService.readRepository(path.toPath());
-    FileChannel f;
-    try {
-      if (!repo.getRepositoryLockFile().toFile().exists())
-        throw new DisplayException("Lock file not found: is this a stream repository?");
-      f = FileChannel.open(repo.getRepositoryLockFile(),StandardOpenOption.WRITE);
-      repositoryLock = f.lock(0L, Long.MAX_VALUE, false);
-    } catch (IOException e) {
-      throw new RuntimeException("Error while locking repository", e);
-    }
-    return repo;
-  }
+	private StreamRepository readAndLockRepository() {
+		File path = repositoryLocation;
+		if (path == null) {
+			path = Paths.get("").toFile();
+		}
+		StreamRepository repo = streamRepositoryService.readRepository(path.toPath());
+		FileChannel f;
+		try {
+			if (!repo.getRepositoryLockFile().toFile().exists())
+				throw new DisplayException("Lock file not found: is this a stream repository?");
+			f = FileChannel.open(repo.getRepositoryLockFile(), StandardOpenOption.WRITE);
+			repositoryLock = f.lock(0L, Long.MAX_VALUE, false);
+		} catch (IOException e) {
+			throw new RuntimeException("Error while locking repository", e);
+		}
+		return repo;
+	}
 }
