@@ -205,6 +205,10 @@ list is traversed from left to right. The first match decides if the
 stream is in the set of synced streams or not. If no pattern matches, the
 stream is not included in the set of synced streams.
 
+**Important:** The stream names are evaluated locally. This implies that if you PULL, only the streams which
+already exist in the pulling repository are taken into account. Initially, the streams have to be transferred 
+separately with the `pull` command.
+
 ## License
 
     Copyright (C) 2014 Ruedi Steinmann
