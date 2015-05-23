@@ -5,7 +5,7 @@ package com.github.ruediste1.btrbck;
  */
 public class DisplayException extends RuntimeException {
 
-	public DisplayException(String message) {
-		super(message);
-	}
+    public DisplayException(String message) {
+        super(message);
+    }
 }

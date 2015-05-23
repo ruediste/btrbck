@@ -11,9 +11,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class BackupStreamRepository extends StreamRepository {
 
-	@Override
-	public Path getBaseDirectory() {
-		return rootDirectory;
-	}
+    @Override
+    public Path getBaseDirectory() {
+        return rootDirectory;
+    }
 
 }

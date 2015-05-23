@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class SendFile implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public String snapshotName;
+    public String snapshotName;
 }

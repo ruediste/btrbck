@@ -22,86 +22,86 @@ import com.google.common.base.Objects;
 @XmlRootElement
 public class Stream {
 
-	/**
-	 * Unique ID of the stream
-	 */
-	@XmlTransient
-	public UUID id;
+    /**
+     * Unique ID of the stream
+     */
+    @XmlTransient
+    public UUID id;
 
-	/**
-	 * Name of the stream
-	 */
-	@XmlTransient
-	public String name;
+    /**
+     * Name of the stream
+     */
+    @XmlTransient
+    public String name;
 
-	/**
-	 * Period during which all snapshots are retained
-	 */
-	@XmlAttribute
-	@XmlJavaTypeAdapter(PeriodAdapter.class)
-	public Period initialRetentionPeriod;
+    /**
+     * Period during which all snapshots are retained
+     */
+    @XmlAttribute
+    @XmlJavaTypeAdapter(PeriodAdapter.class)
+    public Period initialRetentionPeriod;
 
-	/**
-	 * {@link StreamRepository} this stream is part of
-	 */
-	@XmlTransient
-	public StreamRepository streamRepository;
+    /**
+     * {@link StreamRepository} this stream is part of
+     */
+    @XmlTransient
+    public StreamRepository streamRepository;
 
-	/**
-	 * History of {@link Snapshot}s and restore operations which were made in
-	 * this stream
-	 */
-	@XmlTransient
-	public VersionHistory versionHistory;
+    /**
+     * History of {@link Snapshot}s and restore operations which were made in
+     * this stream
+     */
+    @XmlTransient
+    public VersionHistory versionHistory;
 
-	/**
-	 * The interval at which to create automatic snaphots
-	 */
-	@XmlAttribute
-	@XmlJavaTypeAdapter(PeriodAdapter.class)
-	public Period snapshotInterval;
+    /**
+     * The interval at which to create automatic snaphots
+     */
+    @XmlAttribute
+    @XmlJavaTypeAdapter(PeriodAdapter.class)
+    public Period snapshotInterval;
 
-	@XmlElementRef
-	public final ArrayList<Retention> retentions = new ArrayList<>();
+    @XmlElementRef
+    public final ArrayList<Retention> retentions = new ArrayList<>();
 
-	public Path getStreamConfigFile() {
-		return getStreamMetaDirectory().resolve(name + ".xml");
-	}
+    public Path getStreamConfigFile() {
+        return getStreamMetaDirectory().resolve(name + ".xml");
+    }
 
-	public Path getStreamUuidFile() {
-		return getStreamMetaDirectory().resolve(name + ".id");
-	}
+    public Path getStreamUuidFile() {
+        return getStreamMetaDirectory().resolve(name + ".id");
+    }
 
-	public Path getStreamMetaDirectory() {
-		return streamRepository.getBaseDirectory().resolve(name);
-	}
+    public Path getStreamMetaDirectory() {
+        return streamRepository.getBaseDirectory().resolve(name);
+    }
 
-	public Path getSnapshotsDir() {
-		return getStreamMetaDirectory().resolve("snapshots");
-	}
+    public Path getSnapshotsDir() {
+        return getStreamMetaDirectory().resolve("snapshots");
+    }
 
-	public Path getReceiveTempDir() {
-		return getStreamMetaDirectory().resolve("receiveTmp");
-	}
+    public Path getReceiveTempDir() {
+        return getStreamMetaDirectory().resolve("receiveTmp");
+    }
 
-	public Path getVersionHistoryFile() {
-		return getStreamMetaDirectory().resolve("versions.xml");
-	}
+    public Path getVersionHistoryFile() {
+        return getStreamMetaDirectory().resolve("versions.xml");
+    }
 
-	public Path getSnapshotSenderIdFile(String snapshotName) {
-		return getSnapshotsDir().resolve(snapshotName + ".senderId");
-	}
+    public Path getSnapshotSenderIdFile(String snapshotName) {
+        return getSnapshotsDir().resolve(snapshotName + ".senderId");
+    }
 
-	@Override
-	public String toString() {
-		return Objects.toStringHelper(this).add("id", id).add("name", name)
-				.add("repo", streamRepository.rootDirectory.toAbsolutePath())
-				.toString();
-	}
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this).add("id", id).add("name", name)
+                .add("repo", streamRepository.rootDirectory.toAbsolutePath())
+                .toString();
+    }
 
-	public Interval getInitialRetentionInterval(DateTime now) {
-		return new Interval(initialRetentionPeriod, now);
+    public Interval getInitialRetentionInterval(DateTime now) {
+        return new Interval(initialRetentionPeriod, now);
 
-	}
+    }
 
 }

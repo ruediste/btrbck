@@ -16,33 +16,33 @@ import com.github.ruediste1.btrbck.test.TestBase;
 
 public class StreamRepositoryTest extends TestBase {
 
-	@Inject
-	JAXBContext ctx;
+    @Inject
+    JAXBContext ctx;
 
-	@Test
-	public void testXmlSerialization() throws JAXBException {
-		ApplicationStreamRepository repo = new ApplicationStreamRepository();
+    @Test
+    public void testXmlSerialization() throws JAXBException {
+        ApplicationStreamRepository repo = new ApplicationStreamRepository();
 
-		{
-			SyncConfiguration syncConfig = new SyncConfiguration();
-			syncConfig.direction = SyncDirection.PULL;
-			syncConfig.sshTarget = "foo";
-			syncConfig.remoteRepoLocation = "bar";
-			syncConfig.streamPatterns = "foobar";
-			repo.syncConfigurations.add(syncConfig);
-		}
+        {
+            SyncConfiguration syncConfig = new SyncConfiguration();
+            syncConfig.direction = SyncDirection.PULL;
+            syncConfig.sshTarget = "foo";
+            syncConfig.remoteRepoLocation = "bar";
+            syncConfig.streamPatterns = "foobar";
+            repo.syncConfigurations.add(syncConfig);
+        }
 
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		ctx.createMarshaller().marshal(repo, out);
-		ApplicationStreamRepository readRepo = (ApplicationStreamRepository) ctx
-				.createUnmarshaller().unmarshal(
-						new ByteArrayInputStream(out.toByteArray()));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ctx.createMarshaller().marshal(repo, out);
+        ApplicationStreamRepository readRepo = (ApplicationStreamRepository) ctx
+                .createUnmarshaller().unmarshal(
+                        new ByteArrayInputStream(out.toByteArray()));
 
-		assertThat(readRepo.syncConfigurations.size(), is(1));
-		SyncConfiguration syncConfig = readRepo.syncConfigurations.get(0);
-		assertThat(syncConfig.direction, is(SyncDirection.PULL));
-		assertThat(syncConfig.sshTarget, is("foo"));
-		assertThat(syncConfig.remoteRepoLocation, is("bar"));
-		assertThat(syncConfig.streamPatterns, is("foobar"));
-	}
+        assertThat(readRepo.syncConfigurations.size(), is(1));
+        SyncConfiguration syncConfig = readRepo.syncConfigurations.get(0);
+        assertThat(syncConfig.direction, is(SyncDirection.PULL));
+        assertThat(syncConfig.sshTarget, is("foo"));
+        assertThat(syncConfig.remoteRepoLocation, is("bar"));
+        assertThat(syncConfig.streamPatterns, is("foobar"));
+    }
 }

@@ -10,6 +10,6 @@ import com.github.ruediste1.btrbck.SnapshotTransferService;
  * pushing} {@link Snapshot}s
  */
 public class RemoteRepository {
-	public SshTarget sshTarget;
-	public String location;
+    public SshTarget sshTarget;
+    public String location;
 }

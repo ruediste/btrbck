@@ -17,19 +17,20 @@ import com.google.inject.AbstractModule;
 
 public class GuiceModule extends AbstractModule {
 
-	@Override
-	protected void configure() {
-		try {
-			bind(JAXBContext.class).toInstance(
-					JAXBContext.newInstance(Stream.class, VersionHistory.class,
-							VersionHistoryEntry.class,
-							SnapshotVersionHistoryEntry.class,
-							RestoreVersionHistoryEntry.class,
-							BackupStreamRepository.class,
-							ApplicationStreamRepository.class, Retention.class,
-							TimeUnit.class, SyncConfiguration.class));
-		} catch (JAXBException e) {
-			throw new RuntimeException("Error while creating JAXB context", e);
-		}
-	}
+    @Override
+    protected void configure() {
+        try {
+            bind(JAXBContext.class).toInstance(
+                    JAXBContext.newInstance(Stream.class, VersionHistory.class,
+                            VersionHistoryEntry.class,
+                            SnapshotVersionHistoryEntry.class,
+                            RestoreVersionHistoryEntry.class,
+                            BackupStreamRepository.class,
+                            ApplicationStreamRepository.class, Retention.class,
+                            TimeUnit.class, SyncConfiguration.class));
+        }
+        catch (JAXBException e) {
+            throw new RuntimeException("Error while creating JAXB context", e);
+        }
+    }
 }

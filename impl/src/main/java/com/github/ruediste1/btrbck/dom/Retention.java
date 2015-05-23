@@ -29,47 +29,47 @@ import org.joda.time.Period;
  */
 @XmlRootElement
 public class Retention {
-	/**
-	 * Defines how far back snapshots should be retained
-	 */
-	@XmlJavaTypeAdapter(PeriodAdapter.class)
-	@XmlAttribute
-	public Period period;
+    /**
+     * Defines how far back snapshots should be retained
+     */
+    @XmlJavaTypeAdapter(PeriodAdapter.class)
+    @XmlAttribute
+    public Period period;
 
-	/**
-	 * {@link #snapshotsPerTimeUnit} {@link Snapshot}s per {@link #timeUnit}
-	 * should be retained.
-	 */
-	@XmlAttribute
-	public TimeUnit timeUnit;
+    /**
+     * {@link #snapshotsPerTimeUnit} {@link Snapshot}s per {@link #timeUnit}
+     * should be retained.
+     */
+    @XmlAttribute
+    public TimeUnit timeUnit;
 
-	/**
-	 * {@link #snapshotsPerTimeUnit} {@link Snapshot}s per {@link #timeUnit}
-	 * should be retained.
-	 */
-	@XmlAttribute
-	public int snapshotsPerTimeUnit;
+    /**
+     * {@link #snapshotsPerTimeUnit} {@link Snapshot}s per {@link #timeUnit}
+     * should be retained.
+     */
+    @XmlAttribute
+    public int snapshotsPerTimeUnit;
 
-	/**
-	 * Calculate the instants a snapshot should be retained for, given the
-	 * current time.
-	 */
-	public Set<DateTime> retentionTimes(DateTime now) {
-		HashSet<DateTime> result = new HashSet<>();
-		Interval interval = new Interval(now.minus(period), now);
-		DateTime current = timeUnit.truncate(interval.getStart());
-		while (current.isBefore(now)) {
-			DateTime endOfUnit = current.plus(timeUnit.getPeriod());
-			long step = new Interval(current, endOfUnit).toDurationMillis()
-					/ snapshotsPerTimeUnit;
-			for (int i = 0; i < snapshotsPerTimeUnit; i++) {
-				DateTime retentionTime = current.plus(i * step);
-				if (interval.contains(retentionTime)) {
-					result.add(retentionTime);
-				}
-			}
-			current = endOfUnit;
-		}
-		return result;
-	}
+    /**
+     * Calculate the instants a snapshot should be retained for, given the
+     * current time.
+     */
+    public Set<DateTime> retentionTimes(DateTime now) {
+        HashSet<DateTime> result = new HashSet<>();
+        Interval interval = new Interval(now.minus(period), now);
+        DateTime current = timeUnit.truncate(interval.getStart());
+        while (current.isBefore(now)) {
+            DateTime endOfUnit = current.plus(timeUnit.getPeriod());
+            long step = new Interval(current, endOfUnit).toDurationMillis()
+                    / snapshotsPerTimeUnit;
+            for (int i = 0; i < snapshotsPerTimeUnit; i++) {
+                DateTime retentionTime = current.plus(i * step);
+                if (interval.contains(retentionTime)) {
+                    result.add(retentionTime);
+                }
+            }
+            current = endOfUnit;
+        }
+        return result;
+    }
 }

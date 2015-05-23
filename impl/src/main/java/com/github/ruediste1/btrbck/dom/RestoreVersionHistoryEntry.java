@@ -14,45 +14,45 @@ import com.google.common.base.Objects;
  */
 @XmlRootElement(name = "restore")
 public class RestoreVersionHistoryEntry extends VersionHistoryEntry {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	@XmlAttribute
-	public int restoredSnapshotNr;
+    @XmlAttribute
+    public int restoredSnapshotNr;
 
-	public RestoreVersionHistoryEntry() {
+    public RestoreVersionHistoryEntry() {
 
-	}
+    }
 
-	public RestoreVersionHistoryEntry(UUID streamId) {
-		super(streamId);
-	}
+    public RestoreVersionHistoryEntry(UUID streamId) {
+        super(streamId);
+    }
 
-	@Override
-	public int getRepresentedSnapshotCount() {
-		return 0;
-	}
+    @Override
+    public int getRepresentedSnapshotCount() {
+        return 0;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (obj.getClass() != getClass()) {
-			return false;
-		}
-		RestoreVersionHistoryEntry other = (RestoreVersionHistoryEntry) obj;
-		return streamId.equals(other.streamId)
-				&& restoredSnapshotNr == other.restoredSnapshotNr;
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj.getClass() != getClass()) {
+            return false;
+        }
+        RestoreVersionHistoryEntry other = (RestoreVersionHistoryEntry) obj;
+        return streamId.equals(other.streamId)
+                && restoredSnapshotNr == other.restoredSnapshotNr;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(streamId, restoredSnapshotNr);
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(streamId, restoredSnapshotNr);
+    }
 
-	@Override
-	public String toString() {
-		return "(Restore: " + streamId + " restored: " + restoredSnapshotNr
-				+ ")";
-	}
+    @Override
+    public String toString() {
+        return "(Restore: " + streamId + " restored: " + restoredSnapshotNr
+                + ")";
+    }
 }

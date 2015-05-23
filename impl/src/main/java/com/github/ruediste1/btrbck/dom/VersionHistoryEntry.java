@@ -8,18 +8,18 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public abstract class VersionHistoryEntry implements Serializable {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	@XmlAttribute
-	public UUID streamId;
+    @XmlAttribute
+    public UUID streamId;
 
-	public VersionHistoryEntry() {
+    public VersionHistoryEntry() {
 
-	}
+    }
 
-	public VersionHistoryEntry(UUID streamId) {
-		this.streamId = streamId;
-	}
+    public VersionHistoryEntry(UUID streamId) {
+        this.streamId = streamId;
+    }
 
-	public abstract int getRepresentedSnapshotCount();
+    public abstract int getRepresentedSnapshotCount();
 }

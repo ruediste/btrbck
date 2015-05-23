@@ -111,7 +111,8 @@ public class CliMain {
 
 		try {
 			processCommand(args);
-		} catch (DisplayException e) {
+		}
+		catch (DisplayException e) {
 			System.err.println("Error: " + e.getMessage());
 			System.exit(1);
 		}
@@ -170,7 +171,8 @@ public class CliMain {
 						throw new DisplayException("Unknown command " + command);
 				}
 			}
-		} finally {
+		}
+		finally {
 			if (repositoryLock != null) {
 				repositoryLock.release();
 			}
@@ -182,7 +184,8 @@ public class CliMain {
 		try {
 			properties.load(getClass()
 					.getResourceAsStream("version.properties"));
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 		System.out.println("BTRBCK version "
@@ -237,7 +240,8 @@ public class CliMain {
 			if (arguments.isEmpty()) {
 				throw new CmdLineException(parser, "No command given");
 			}
-		} catch (CmdLineException e) {
+		}
+		catch (CmdLineException e) {
 			// if there's a problem in the command line,
 			// you'll get this exception. this will report
 			// an error message.
@@ -246,7 +250,8 @@ public class CliMain {
 			try {
 				ByteStreams.copy(getClass().getResourceAsStream("usage.txt"),
 						System.err);
-			} catch (IOException e1) {
+			}
+			catch (IOException e1) {
 				throw new RuntimeException("Error while printing usage", e1);
 			}
 
@@ -310,19 +315,19 @@ public class CliMain {
 						remoteStreamName = config.remoteStreamName;
 					}
 					switch (config.direction) {
-					case PULL:
-						streamTransferService.pull(repo, name, remote,
-								remoteStreamName,
-								config.createRemoteIfNecessary);
-						break;
+						case PULL:
+							streamTransferService.pull(repo, name, remote,
+									remoteStreamName,
+									config.createRemoteIfNecessary);
+							break;
 
-					case PUSH:
-						streamTransferService.push(stream, remote,
-								remoteStreamName,
-								config.createRemoteIfNecessary);
-						break;
-					default:
-						throw new RuntimeException("Should not happen");
+						case PUSH:
+							streamTransferService.push(stream, remote,
+									remoteStreamName,
+									config.createRemoteIfNecessary);
+							break;
+						default:
+							throw new RuntimeException("Should not happen");
 
 					}
 				}
@@ -525,14 +530,18 @@ public class CliMain {
 		if (path == null) {
 			path = Paths.get("").toFile();
 		}
-		StreamRepository repo = streamRepositoryService.readRepository(path.toPath());
+		StreamRepository repo = streamRepositoryService.readRepository(path
+				.toPath());
 		FileChannel f;
 		try {
 			if (!repo.getRepositoryLockFile().toFile().exists())
-				throw new DisplayException("Lock file not found: is this a stream repository?");
-			f = FileChannel.open(repo.getRepositoryLockFile(), StandardOpenOption.WRITE);
+				throw new DisplayException(
+						"Lock file not found: is this a stream repository?");
+			f = FileChannel.open(repo.getRepositoryLockFile(),
+					StandardOpenOption.WRITE);
 			repositoryLock = f.lock(0L, Long.MAX_VALUE, false);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException("Error while locking repository", e);
 		}
 		return repo;

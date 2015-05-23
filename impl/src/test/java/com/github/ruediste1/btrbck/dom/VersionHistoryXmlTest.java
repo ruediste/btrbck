@@ -18,46 +18,46 @@ import com.github.ruediste1.btrbck.test.TestBase;
 
 public class VersionHistoryXmlTest extends TestBase {
 
-	@Inject
-	JAXBContext ctx;
-	private VersionHistory history;
+    @Inject
+    JAXBContext ctx;
+    private VersionHistory history;
 
-	@Before
-	public void setup() {
-		history = new VersionHistory();
+    @Before
+    public void setup() {
+        history = new VersionHistory();
 
-	}
+    }
 
-	@Test
-	public void testEmpty() throws JAXBException {
-		checkRoundTrip(history);
-	}
+    @Test
+    public void testEmpty() throws JAXBException {
+        checkRoundTrip(history);
+    }
 
-	@Test
-	public void testSnapshotOnly() throws JAXBException {
-		history.addVersion(UUID.randomUUID());
-		checkRoundTrip(history);
-	}
+    @Test
+    public void testSnapshotOnly() throws JAXBException {
+        history.addVersion(UUID.randomUUID());
+        checkRoundTrip(history);
+    }
 
-	@Test
-	public void testRestoreOnly() throws JAXBException {
-		history.addRestore(UUID.randomUUID(), 4);
-		checkRoundTrip(history);
-	}
+    @Test
+    public void testRestoreOnly() throws JAXBException {
+        history.addRestore(UUID.randomUUID(), 4);
+        checkRoundTrip(history);
+    }
 
-	@Test
-	public void testMixedOnly() throws JAXBException {
-		history.addVersion(UUID.randomUUID());
-		history.addRestore(UUID.randomUUID(), 4);
-		checkRoundTrip(history);
-	}
+    @Test
+    public void testMixedOnly() throws JAXBException {
+        history.addVersion(UUID.randomUUID());
+        history.addRestore(UUID.randomUUID(), 4);
+        checkRoundTrip(history);
+    }
 
-	private void checkRoundTrip(VersionHistory original) throws JAXBException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		ctx.createMarshaller().marshal(original, out);
-		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
-		VersionHistory clone = (VersionHistory) ctx.createUnmarshaller()
-				.unmarshal(in);
-		assertThat(clone, equalTo(original));
-	}
+    private void checkRoundTrip(VersionHistory original) throws JAXBException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ctx.createMarshaller().marshal(original, out);
+        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+        VersionHistory clone = (VersionHistory) ctx.createUnmarshaller()
+                .unmarshal(in);
+        assertThat(clone, equalTo(original));
+    }
 }

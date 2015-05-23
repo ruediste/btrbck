@@ -40,341 +40,341 @@ import com.github.ruediste1.btrbck.dom.VersionHistory;
 @Singleton
 public class StreamService {
 
-	Logger log = LoggerFactory.getLogger(StreamService.class);
+    Logger log = LoggerFactory.getLogger(StreamService.class);
 
-	@Inject
-	BtrfsService btrfsService;
+    @Inject
+    BtrfsService btrfsService;
 
-	@Inject
-	StreamRepositoryService streamRepositoryService;
+    @Inject
+    StreamRepositoryService streamRepositoryService;
 
-	@Inject
-	JAXBContext ctx;
+    @Inject
+    JAXBContext ctx;
 
-	public Stream readStream(StreamRepository repository, String name) {
-		Stream result = tryReadStream(repository, name);
-		if (result == null) {
-			throw new DisplayException("Cannot read stream " + name
-					+ " in repository "
-					+ repository.rootDirectory.toAbsolutePath());
-		}
-		return result;
-	}
+    public Stream readStream(StreamRepository repository, String name) {
+        Stream result = tryReadStream(repository, name);
+        if (result == null) {
+            throw new DisplayException("Cannot read stream " + name
+                    + " in repository "
+                    + repository.rootDirectory.toAbsolutePath());
+        }
+        return result;
+    }
 
-	public Stream tryReadStream(StreamRepository repository, String name) {
-		Stream s = new Stream();
-		s.name = name;
-		s.streamRepository = repository;
-		if (!Files.isDirectory(s.getStreamMetaDirectory())) {
-			return null;
-		}
+    public Stream tryReadStream(StreamRepository repository, String name) {
+        Stream s = new Stream();
+        s.name = name;
+        s.streamRepository = repository;
+        if (!Files.isDirectory(s.getStreamMetaDirectory())) {
+            return null;
+        }
 
-		Stream readStream;
+        Stream readStream;
 
-		// read config file
-		try {
-			readStream = (Stream) ctx.createUnmarshaller().unmarshal(
-					s.getStreamConfigFile().toFile());
-		}
-		catch (JAXBException e) {
-			throw new RuntimeException(
-					"Error while reading stream config file", e);
-		}
+        // read config file
+        try {
+            readStream = (Stream) ctx.createUnmarshaller().unmarshal(
+                    s.getStreamConfigFile().toFile());
+        }
+        catch (JAXBException e) {
+            throw new RuntimeException(
+                    "Error while reading stream config file", e);
+        }
 
-		readStream.name = name;
-		readStream.streamRepository = repository;
+        readStream.name = name;
+        readStream.streamRepository = repository;
 
-		// read id
-		try {
-			readStream.id = UUID.fromString(new String(Files
-					.readAllBytes(readStream.getStreamUuidFile()), "UTF-8"));
-		}
-		catch (IOException e) {
-			throw new RuntimeException("Error while reading stream id file", e);
+        // read id
+        try {
+            readStream.id = UUID.fromString(new String(Files
+                    .readAllBytes(readStream.getStreamUuidFile()), "UTF-8"));
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Error while reading stream id file", e);
 
-		}
-		// read version history
-		try {
-			File historyFile = s.getVersionHistoryFile().toFile();
-			log.debug("reading version history from " + historyFile);
-			readStream.versionHistory = (VersionHistory) ctx
-					.createUnmarshaller().unmarshal(historyFile);
-		}
-		catch (JAXBException e) {
-			throw new RuntimeException("Error while reading version history", e);
-		}
+        }
+        // read version history
+        try {
+            File historyFile = s.getVersionHistoryFile().toFile();
+            log.debug("reading version history from " + historyFile);
+            readStream.versionHistory = (VersionHistory) ctx
+                    .createUnmarshaller().unmarshal(historyFile);
+        }
+        catch (JAXBException e) {
+            throw new RuntimeException("Error while reading version history", e);
+        }
 
-		log.debug("read stream " + readStream + ", versionHistory: "
-				+ readStream.versionHistory);
-		return readStream;
-	}
+        log.debug("read stream " + readStream + ", versionHistory: "
+                + readStream.versionHistory);
+        return readStream;
+    }
 
-	public Stream createStream(StreamRepository streamRepository, String name)
-			throws IOException {
+    public Stream createStream(StreamRepository streamRepository, String name)
+            throws IOException {
 
-		if (tryReadStream(streamRepository, name) != null) {
-			throw new DisplayException("Stream " + name + " already exists");
-		}
+        if (tryReadStream(streamRepository, name) != null) {
+            throw new DisplayException("Stream " + name + " already exists");
+        }
 
-		Stream stream = new Stream();
-		stream.streamRepository = streamRepository;
-		stream.name = name;
+        Stream stream = new Stream();
+        stream.streamRepository = streamRepository;
+        stream.name = name;
 
-		Files.createDirectory(stream.getStreamMetaDirectory());
-		Files.createDirectory(stream.getSnapshotsDir());
-		Files.createDirectory(stream.getReceiveTempDir());
+        Files.createDirectory(stream.getStreamMetaDirectory());
+        Files.createDirectory(stream.getSnapshotsDir());
+        Files.createDirectory(stream.getReceiveTempDir());
 
-		stream.id = UUID.randomUUID();
-		Files.write(stream.getStreamUuidFile(),
-				stream.id.toString().getBytes("UTF-8"));
+        stream.id = UUID.randomUUID();
+        Files.write(stream.getStreamUuidFile(),
+                stream.id.toString().getBytes("UTF-8"));
 
-		if (stream.streamRepository instanceof ApplicationStreamRepository) {
-			Path workingDirectory = ((ApplicationStreamRepository) stream.streamRepository)
-					.getWorkingDirectory(stream);
-			btrfsService.createSubVolume(workingDirectory);
-		}
+        if (stream.streamRepository instanceof ApplicationStreamRepository) {
+            Path workingDirectory = ((ApplicationStreamRepository) stream.streamRepository)
+                    .getWorkingDirectory(stream);
+            btrfsService.createSubVolume(workingDirectory);
+        }
 
-		// write stream config
-		InputStream in = getClass().getClassLoader().getResourceAsStream(
-				"stream.template.xml");
-		Files.copy(in, stream.getStreamConfigFile());
+        // write stream config
+        InputStream in = getClass().getClassLoader().getResourceAsStream(
+                "stream.template.xml");
+        Files.copy(in, stream.getStreamConfigFile());
 
-		// initialize version history
-		stream.versionHistory = new VersionHistory();
-		writeVersionHistory(stream);
+        // initialize version history
+        stream.versionHistory = new VersionHistory();
+        writeVersionHistory(stream);
 
-		return stream;
-	}
+        return stream;
+    }
 
-	public void writeVersionHistory(Stream stream) {
-		try {
-			ctx.createMarshaller().marshal(stream.versionHistory,
-					stream.getVersionHistoryFile().toFile());
-		}
-		catch (JAXBException e) {
-			throw new RuntimeException("Error while writing stream", e);
-		}
-	}
+    public void writeVersionHistory(Stream stream) {
+        try {
+            ctx.createMarshaller().marshal(stream.versionHistory,
+                    stream.getVersionHistoryFile().toFile());
+        }
+        catch (JAXBException e) {
+            throw new RuntimeException("Error while writing stream", e);
+        }
+    }
 
-	public Set<String> getStreamNames(StreamRepository repository) {
-		return Util.getDirectoryNames(repository.getBaseDirectory());
-	}
+    public Set<String> getStreamNames(StreamRepository repository) {
+        return Util.getDirectoryNames(repository.getBaseDirectory());
+    }
 
-	public void deleteStream(Path repoLocation, String name) {
-		deleteStream(readStream(
-				streamRepositoryService.readRepository(repoLocation), name));
-	}
+    public void deleteStream(Path repoLocation, String name) {
+        deleteStream(readStream(
+                streamRepositoryService.readRepository(repoLocation), name));
+    }
 
-	public void deleteStream(StreamRepository repo, String name) {
-		deleteStream(readStream(repo, name));
-	}
+    public void deleteStream(StreamRepository repo, String name) {
+        deleteStream(readStream(repo, name));
+    }
 
-	public void deleteStream(Stream stream) {
-		if (stream.streamRepository instanceof ApplicationStreamRepository) {
-			Path workingDirectory = ((ApplicationStreamRepository) stream.streamRepository)
-					.getWorkingDirectory(stream);
-			btrfsService.deleteSubVolume(workingDirectory);
-		}
+    public void deleteStream(Stream stream) {
+        if (stream.streamRepository instanceof ApplicationStreamRepository) {
+            Path workingDirectory = ((ApplicationStreamRepository) stream.streamRepository)
+                    .getWorkingDirectory(stream);
+            btrfsService.deleteSubVolume(workingDirectory);
+        }
 
-		for (Snapshot snapshot : getSnapshots(stream).values()) {
-			deleteSnapshot(snapshot);
-		}
+        for (Snapshot snapshot : getSnapshots(stream).values()) {
+            deleteSnapshot(snapshot);
+        }
 
-		clearReceiveTempDir(stream);
+        clearReceiveTempDir(stream);
 
-		Util.removeRecursive(stream.getStreamMetaDirectory(), true);
-	}
+        Util.removeRecursive(stream.getStreamMetaDirectory(), true);
+    }
 
-	public void deleteStreams(StreamRepository repository) {
-		Set<String> streamNames = getStreamNames(repository);
-		for (String name : streamNames) {
-			Stream s = new Stream();
-			s.name = name;
-			s.streamRepository = repository;
-			deleteStream(s);
-		}
-	}
+    public void deleteStreams(StreamRepository repository) {
+        Set<String> streamNames = getStreamNames(repository);
+        for (String name : streamNames) {
+            Stream s = new Stream();
+            s.name = name;
+            s.streamRepository = repository;
+            deleteStream(s);
+        }
+    }
 
-	/**
-	 * Return the snapshots in the stream, sorted by their number
-	 */
-	public TreeMap<Integer, Snapshot> getSnapshots(Stream stream) {
-		TreeMap<Integer, Snapshot> result = new TreeMap<>();
-		for (String name : Util.getDirectoryNames(stream.getSnapshotsDir())) {
-			Snapshot snapshot = Snapshot.parse(stream, name);
+    /**
+     * Return the snapshots in the stream, sorted by their number
+     */
+    public TreeMap<Integer, Snapshot> getSnapshots(Stream stream) {
+        TreeMap<Integer, Snapshot> result = new TreeMap<>();
+        for (String name : Util.getDirectoryNames(stream.getSnapshotsDir())) {
+            Snapshot snapshot = Snapshot.parse(stream, name);
 
-			// read sender id if exists
-			if (Files.exists(stream.getSnapshotSenderIdFile(name))) {
-				try {
-					snapshot.senderStreamId = UUID.fromString(new String(
-							Files.readAllBytes(stream
-									.getSnapshotSenderIdFile(name)), "UTF-8"));
-				}
-				catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-			result.put(snapshot.nr, snapshot);
-		}
-		return result;
-	}
+            // read sender id if exists
+            if (Files.exists(stream.getSnapshotSenderIdFile(name))) {
+                try {
+                    snapshot.senderStreamId = UUID.fromString(new String(
+                            Files.readAllBytes(stream
+                                    .getSnapshotSenderIdFile(name)), "UTF-8"));
+                }
+                catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            result.put(snapshot.nr, snapshot);
+        }
+        return result;
+    }
 
-	public Snapshot takeSnapshot(Stream stream) {
-		if (!(stream.streamRepository instanceof ApplicationStreamRepository)) {
-			throw new DisplayException(
-					"Cannot take a snapshot of the working directory of stream "
-							+ stream.name
-							+ " in non-application stream repository "
-							+ stream.streamRepository.rootDirectory
-									.toAbsolutePath());
-		}
-		ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
+    public Snapshot takeSnapshot(Stream stream) {
+        if (!(stream.streamRepository instanceof ApplicationStreamRepository)) {
+            throw new DisplayException(
+                    "Cannot take a snapshot of the working directory of stream "
+                            + stream.name
+                            + " in non-application stream repository "
+                            + stream.streamRepository.rootDirectory
+                                    .toAbsolutePath());
+        }
+        ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
 
-		Snapshot snapshot = new Snapshot();
-		snapshot.stream = stream;
-		snapshot.date = new DateTime();
-		snapshot.nr = stream.versionHistory.getVersionCount();
+        Snapshot snapshot = new Snapshot();
+        snapshot.stream = stream;
+        snapshot.date = new DateTime();
+        snapshot.nr = stream.versionHistory.getVersionCount();
 
-		stream.versionHistory.addVersion(stream.id);
-		writeVersionHistory(stream);
+        stream.versionHistory.addVersion(stream.id);
+        writeVersionHistory(stream);
 
-		btrfsService.takeSnapshot(repo.getWorkingDirectory(stream),
-				snapshot.getSnapshotDir(), true);
-		return snapshot;
-	}
+        btrfsService.takeSnapshot(repo.getWorkingDirectory(stream),
+                snapshot.getSnapshotDir(), true);
+        return snapshot;
+    }
 
-	public void restoreLatestSnapshot(Stream stream) {
-		TreeMap<Integer, Snapshot> snapshots = getSnapshots(stream);
-		if (snapshots.isEmpty()) {
-			throw new DisplayException(
-					"Cannot restore latest snapshot. Stream " + stream.name
-							+ " does not contain any snapshots");
-		}
-		restoreSnapshot(stream, Collections.max(snapshots.keySet()));
-	}
+    public void restoreLatestSnapshot(Stream stream) {
+        TreeMap<Integer, Snapshot> snapshots = getSnapshots(stream);
+        if (snapshots.isEmpty()) {
+            throw new DisplayException(
+                    "Cannot restore latest snapshot. Stream " + stream.name
+                            + " does not contain any snapshots");
+        }
+        restoreSnapshot(stream, Collections.max(snapshots.keySet()));
+    }
 
-	public void restoreSnapshot(Stream stream, int snapshotNr) {
-		TreeMap<Integer, Snapshot> snapshots = getSnapshots(stream);
-		Snapshot snapshot = snapshots.get(snapshotNr);
-		if (snapshot == null) {
-			throw new DisplayException("Cannot restore snapshot. Stream "
-					+ stream.name + " does not contain snapshot number "
-					+ snapshotNr);
-		}
-		restoreSnapshot(snapshot);
-	}
+    public void restoreSnapshot(Stream stream, int snapshotNr) {
+        TreeMap<Integer, Snapshot> snapshots = getSnapshots(stream);
+        Snapshot snapshot = snapshots.get(snapshotNr);
+        if (snapshot == null) {
+            throw new DisplayException("Cannot restore snapshot. Stream "
+                    + stream.name + " does not contain snapshot number "
+                    + snapshotNr);
+        }
+        restoreSnapshot(snapshot);
+    }
 
-	/**
-	 * Restore a snapshot.
-	 * 
-	 * The following list outlines the steps taken:
-	 * <ol>
-	 * <li>delete working directory</li>
-	 * <li>update version file</li>
-	 * <li>restore working directory</li>
-	 * </ol>
-	 * 
-	 * If the process is aborted at any stage (power loss), the command can
-	 * simply be executed again.
-	 */
-	public void restoreSnapshot(Snapshot snapshot) {
-		Stream stream = snapshot.stream;
-		ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
+    /**
+     * Restore a snapshot.
+     * 
+     * The following list outlines the steps taken:
+     * <ol>
+     * <li>delete working directory</li>
+     * <li>update version file</li>
+     * <li>restore working directory</li>
+     * </ol>
+     * 
+     * If the process is aborted at any stage (power loss), the command can
+     * simply be executed again.
+     */
+    public void restoreSnapshot(Snapshot snapshot) {
+        Stream stream = snapshot.stream;
+        ApplicationStreamRepository repo = (ApplicationStreamRepository) stream.streamRepository;
 
-		btrfsService.deleteSubVolume(repo.getWorkingDirectory(stream));
-		stream.versionHistory.addRestore(stream.id, snapshot.nr);
-		writeVersionHistory(stream);
-		btrfsService.takeSnapshot(snapshot.getSnapshotDir(),
-				repo.getWorkingDirectory(stream), false);
-	}
+        btrfsService.deleteSubVolume(repo.getWorkingDirectory(stream));
+        stream.versionHistory.addRestore(stream.id, snapshot.nr);
+        writeVersionHistory(stream);
+        btrfsService.takeSnapshot(snapshot.getSnapshotDir(),
+                repo.getWorkingDirectory(stream), false);
+    }
 
-	public void deleteSnapshot(Snapshot snapshot) {
-		try {
-			Files.deleteIfExists(snapshot.stream
-					.getSnapshotSenderIdFile(snapshot.getSnapshotName()));
-		}
-		catch (IOException e) {
-			throw new RuntimeException("error while deleting senderId file", e);
-		}
-		btrfsService.deleteSubVolume(snapshot.getSnapshotDir());
-	}
+    public void deleteSnapshot(Snapshot snapshot) {
+        try {
+            Files.deleteIfExists(snapshot.stream
+                    .getSnapshotSenderIdFile(snapshot.getSnapshotName()));
+        }
+        catch (IOException e) {
+            throw new RuntimeException("error while deleting senderId file", e);
+        }
+        btrfsService.deleteSubVolume(snapshot.getSnapshotDir());
+    }
 
-	public void clearReceiveTempDir(Stream stream) {
-		for (String name : Util.getDirectoryNames(stream.getReceiveTempDir())) {
-			btrfsService.deleteSubVolume(stream.getReceiveTempDir().resolve(
-					name));
-		}
-	}
+    public void clearReceiveTempDir(Stream stream) {
+        for (String name : Util.getDirectoryNames(stream.getReceiveTempDir())) {
+            btrfsService.deleteSubVolume(stream.getReceiveTempDir().resolve(
+                    name));
+        }
+    }
 
-	/**
-	 * Determine if a new snapshot is required, given the current time
-	 */
-	public void takeSnapshotIfRequired(Stream stream, Instant now) {
-		if (isSnapshotRequired(now, stream.snapshotInterval,
-				getSnapshots(stream).values())) {
-			takeSnapshot(stream);
-		}
-	}
+    /**
+     * Determine if a new snapshot is required, given the current time
+     */
+    public void takeSnapshotIfRequired(Stream stream, Instant now) {
+        if (isSnapshotRequired(now, stream.snapshotInterval,
+                getSnapshots(stream).values())) {
+            takeSnapshot(stream);
+        }
+    }
 
-	boolean isSnapshotRequired(Instant now, Period snapshotInterval,
-			Collection<Snapshot> snapshots) {
-		if (snapshotInterval == null) {
-			return false;
-		}
-		DateTime latest = null;
-		for (Snapshot s : snapshots) {
-			if (latest == null || latest.isBefore(s.date)) {
-				latest = s.date;
-			}
-		}
+    boolean isSnapshotRequired(Instant now, Period snapshotInterval,
+            Collection<Snapshot> snapshots) {
+        if (snapshotInterval == null) {
+            return false;
+        }
+        DateTime latest = null;
+        for (Snapshot s : snapshots) {
+            if (latest == null || latest.isBefore(s.date)) {
+                latest = s.date;
+            }
+        }
 
-		log.debug("Latest snapshot date: " + latest + " interval: "
-				+ snapshotInterval + " now: " + now);
+        log.debug("Latest snapshot date: " + latest + " interval: "
+                + snapshotInterval + " now: " + now);
 
-		boolean snapshotRequired = true;
-		if (latest != null) {
-			if (latest.plus(snapshotInterval).isAfter(now)) {
-				snapshotRequired = false;
-			}
-		}
-		return snapshotRequired;
-	}
+        boolean snapshotRequired = true;
+        if (latest != null) {
+            if (latest.plus(snapshotInterval).isAfter(now)) {
+                snapshotRequired = false;
+            }
+        }
+        return snapshotRequired;
+    }
 
-	public void pruneSnapshots(Stream stream) {
-		if (stream.initialRetentionPeriod == null
-				&& stream.retentions.isEmpty()) {
-			// no retentions, do not prune
-			return;
-		}
+    public void pruneSnapshots(Stream stream) {
+        if (stream.initialRetentionPeriod == null
+                && stream.retentions.isEmpty()) {
+            // no retentions, do not prune
+            return;
+        }
 
-		DateTime now = new DateTime(ISOChronology.getInstanceUTC());
-		TreeMap<DateTime, Boolean> keepSnapshot = new TreeMap<>();
-		HashMap<DateTime, Snapshot> snapshotMap = new HashMap<>();
-		Interval initialRetentionInterval = stream
-				.getInitialRetentionInterval(now);
+        DateTime now = new DateTime(ISOChronology.getInstanceUTC());
+        TreeMap<DateTime, Boolean> keepSnapshot = new TreeMap<>();
+        HashMap<DateTime, Snapshot> snapshotMap = new HashMap<>();
+        Interval initialRetentionInterval = stream
+                .getInitialRetentionInterval(now);
 
-		// fill maps
-		for (Snapshot s : getSnapshots(stream).values()) {
-			keepSnapshot.put(s.date, s.date.isAfter(now)
-					|| initialRetentionInterval.contains(s.date));
-			snapshotMap.put(s.date, s);
-		}
+        // fill maps
+        for (Snapshot s : getSnapshots(stream).values()) {
+            keepSnapshot.put(s.date, s.date.isAfter(now)
+                    || initialRetentionInterval.contains(s.date));
+            snapshotMap.put(s.date, s);
+        }
 
-		// process retentions
-		for (Retention r : stream.retentions) {
-			for (DateTime time : r.retentionTimes(now)) {
-				DateTime key = keepSnapshot.ceilingKey(time);
-				if (key != null) {
-					keepSnapshot.put(key, true);
-				}
-			}
-		}
+        // process retentions
+        for (Retention r : stream.retentions) {
+            for (DateTime time : r.retentionTimes(now)) {
+                DateTime key = keepSnapshot.ceilingKey(time);
+                if (key != null) {
+                    keepSnapshot.put(key, true);
+                }
+            }
+        }
 
-		// delete streams which are not to be retained
-		for (Entry<DateTime, Boolean> entry : keepSnapshot.entrySet()) {
-			if (!entry.getValue()) {
-				deleteSnapshot(snapshotMap.get(entry.getKey()));
-			}
-		}
-	}
+        // delete streams which are not to be retained
+        for (Entry<DateTime, Boolean> entry : keepSnapshot.entrySet()) {
+            if (!entry.getValue()) {
+                deleteSnapshot(snapshotMap.get(entry.getKey()));
+            }
+        }
+    }
 }

@@ -13,22 +13,22 @@ import com.google.common.base.Strings;
  */
 public class PeriodAdapter extends XmlAdapter<String, Period> {
 
-	PeriodFormatter formatter = ISOPeriodFormat.standard();
+    PeriodFormatter formatter = ISOPeriodFormat.standard();
 
-	@Override
-	public Period unmarshal(String v) throws Exception {
-		if (Strings.isNullOrEmpty(v)) {
-			return null;
-		}
-		return formatter.parsePeriod(v);
-	}
+    @Override
+    public Period unmarshal(String v) throws Exception {
+        if (Strings.isNullOrEmpty(v)) {
+            return null;
+        }
+        return formatter.parsePeriod(v);
+    }
 
-	@Override
-	public String marshal(Period v) throws Exception {
-		if (v == null) {
-			return "";
-		}
-		return formatter.print(v);
-	}
+    @Override
+    public String marshal(Period v) throws Exception {
+        if (v == null) {
+            return "";
+        }
+        return formatter.print(v);
+    }
 
 }

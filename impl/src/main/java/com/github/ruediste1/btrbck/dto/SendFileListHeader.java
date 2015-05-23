@@ -7,11 +7,11 @@ import com.github.ruediste1.btrbck.dom.VersionHistory;
 
 public class SendFileListHeader implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public VersionHistory targetVersionHistory;
-	public byte[] streamConfiguration;
-	public int count;
+    public VersionHistory targetVersionHistory;
+    public byte[] streamConfiguration;
+    public int count;
 
-	public UUID senderStreamId;
+    public UUID senderStreamId;
 }

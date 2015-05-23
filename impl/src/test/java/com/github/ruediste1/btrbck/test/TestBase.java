@@ -22,19 +22,19 @@ import com.google.inject.Injector;
  */
 public class TestBase {
 
-	@Inject
-	BtrfsService btrfsService;
+    @Inject
+    BtrfsService btrfsService;
 
-	@Before
-	final public void setUpTestBase() {
-		Injector injector = Guice.createInjector(new GuiceModule());
-		Util.setInjector(injector);
-		Util.injectMembers(this);
-		btrfsService.setUseSudo(true);
-		MDC.put("id", "1");
-	}
+    @Before
+    final public void setUpTestBase() {
+        Injector injector = Guice.createInjector(new GuiceModule());
+        Util.setInjector(injector);
+        Util.injectMembers(this);
+        btrfsService.setUseSudo(true);
+        MDC.put("id", "1");
+    }
 
-	protected Path createTempDirectory() throws IOException {
-		return Files.createTempDirectory(Paths.get("/data/tmp"), "btrbck");
-	}
+    protected Path createTempDirectory() throws IOException {
+        return Files.createTempDirectory(Paths.get("/data/tmp"), "btrbck");
+    }
 }
