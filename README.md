@@ -83,7 +83,7 @@ for the root user. Then run
     
     btrbck push myStream root@<host> <remote repo path>
     
-This will transfer all snapshots to the remote host. Please not that for this to work, the root of the file system has 
+This will transfer all snapshots to the remote host. Please note that for this to work, the root of the file system has 
 to be mounted directly. Subvolume mounts do not work for send/receive due to a bug in `btrfs-tools`.
 
 ## Permissions
